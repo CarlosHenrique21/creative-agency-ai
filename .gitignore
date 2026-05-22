@@ -13,10 +13,12 @@ output/flyers/*.webp
 output/reports/*.json
 # ChromaDB persistence (large binary files)
 chroma_db/
-# Brand assets uploaded locally
+# Brand assets uploaded locally (keep .gitkeep placeholders)
 brand_assets/docs/*
 brand_assets/images/*
+brand_assets/logo/*
 !brand_assets/docs/.gitkeep
 !brand_assets/images/.gitkeep
+!brand_assets/logo/.gitkeep
 dist/
 *.egg-info/

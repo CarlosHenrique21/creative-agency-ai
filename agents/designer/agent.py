@@ -4,19 +4,22 @@ from agents.base import BaseAgent
 from core.config import settings
 from core.state import CampaignState, FlyerSpec
 from prompts.designer import SYSTEM_PROMPT, build_image_prompt
+from rag.logo_compositor import composite_logo, find_logo
 
 
 class DesignerAgent(BaseAgent):
-    """Gera os prompts visuais e chama gpt-image-1 para criar cada flyer."""
+    """Gera os prompts visuais, chama gpt-image-1 e compõe a logo da marca."""
 
     name = "designer"
     role = "Designer"
 
     async def run(self, state: CampaignState) -> dict:
+        has_logo = find_logo(state.brand_id) is not None
         self.log.info(
             "designing_flyers",
             count=len(state.flyers),
             has_visual_rag=bool(state.visual_rag_context),
+            has_logo=has_logo,
         )
 
         flyers: dict[str, FlyerSpec] = dict(state.flyers)
@@ -27,12 +30,20 @@ class DesignerAgent(BaseAgent):
 
             self.log.info("generating_image", platform=platform_key)
             b64, url = await self._generate_image(spec, image_prompt)
+
+            # Composite logo on top of the generated flyer
+            if state.brand_id:
+                b64 = composite_logo(b64, state.brand_id, platform_key)
+
             spec.image_b64 = b64
             spec.image_url = url
 
+        logo_note = " (logo aplicada)" if has_logo else " (sem logo — adicione em brand_assets/logo/)"
         return {
             "flyers": flyers,
-            "messages": self._message(f"Imagens geradas para {len(flyers)} plataformas."),
+            "messages": self._message(
+                f"Imagens geradas para {len(flyers)} plataformas{logo_note}."
+            ),
         }
 
     async def _build_visual_prompt(self, spec: FlyerSpec, state: CampaignState) -> str:
@@ -46,6 +57,13 @@ You MUST reflect this style in the image prompt:
 {state.visual_rag_context}
 """
 
+        logo_note = ""
+        if state.brand_id and find_logo(state.brand_id):
+            logo_note = (
+                "\nIMPORTANT: Leave a clean, uncluttered area for the brand logo "
+                "to be composited in post-processing. Do NOT generate a logo in the image."
+            )
+
         user_prompt = f"""
 Direção criativa: {state.creative_direction}
 Plataforma: {spec.platform.value} ({spec.width}x{spec.height}px)
@@ -55,7 +73,7 @@ Call to action: {spec.call_to_action}
 Marca: {state.brand.name}
 Cores: {state.brand.primary_color} / {state.brand.secondary_color} / {state.brand.accent_color}
 Estilo: {state.brand.font_style}, tom {state.brand.tone}
-{visual_rag_section}
+{visual_rag_section}{logo_note}
 Crie um prompt detalhado em inglês para gerar esta imagem com gpt-image-1.
 O prompt deve capturar fielmente o estilo visual da marca definido acima.
 """

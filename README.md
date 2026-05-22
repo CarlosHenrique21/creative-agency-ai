@@ -133,8 +133,8 @@ social-media-agency/
 ## Configuração
 
 ```bash
-# 1. Instalar dependências
-pip install -e ".[dev]"
+# 1. Instalar dependências (uv gerencia o venv automaticamente)
+uv sync
 
 # 2. Configurar variáveis de ambiente
 cp .env.example .env
@@ -151,9 +151,9 @@ OPENAI_API_KEY=sk-...
 ## Rodando
 
 ```bash
-python main.py
+PYTHONPATH=. uv run python main.py
 # ou com hot-reload:
-uvicorn main:app --reload
+PYTHONPATH=. uv run uvicorn main:app --reload
 ```
 
 Documentação interativa: `http://localhost:8000/docs`
@@ -167,7 +167,7 @@ O ADK oferece duas formas nativas de testar o pipeline sem precisar subir a API.
 ### Playground web (recomendado)
 
 ```bash
-adk web
+PYTHONPATH=. uv run adk web .
 ```
 
 Abre `http://localhost:8000` com uma interface de chat onde você conversa diretamente
@@ -181,7 +181,7 @@ Exemplo de mensagem para iniciar um teste:
 ### Terminal interativo
 
 ```bash
-adk run .
+PYTHONPATH=. uv run adk run .
 ```
 
 Mesma experiência do playground, mas direto no terminal — útil para CI ou ambientes sem browser.

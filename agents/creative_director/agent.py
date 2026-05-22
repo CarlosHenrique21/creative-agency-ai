@@ -11,19 +11,28 @@ class CreativeDirectorAgent(BaseAgent):
     role = "Creative Director"
 
     async def run(self, state: CampaignState) -> dict:
-        self.log.info("creating_direction", campaign=state.campaign_id)
+        self.log.info("creating_direction", campaign=state.campaign_id, has_rag=bool(state.brand_rag_context))
 
         brand_analysis = next(
             (m.content for m in reversed(state.messages) if m.agent == "brand_strategist"),
             "Nenhuma análise de marca disponível.",
         )
 
+        rag_section = ""
+        if state.brand_rag_context:
+            rag_section = f"""
+### Brand Knowledge Base (RAG)
+Documentos oficiais da marca para reforçar a direção criativa:
+
+{state.brand_rag_context}
+"""
+
         user_prompt = f"""
 Brief: {state.brief}
 
 Análise de marca do Brand Strategist:
 {brand_analysis}
-
+{rag_section}
 Plataformas: {[p.value for p in state.platforms]}
 
 Crie a direção criativa completa para esta campanha, incluindo:

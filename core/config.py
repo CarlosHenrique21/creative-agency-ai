@@ -19,5 +19,8 @@ class Settings(BaseSettings):
     image_model: str = Field("gpt-image-1", alias="IMAGE_MODEL")
     image_quality: str = Field("high", alias="IMAGE_QUALITY")
 
+    chroma_brand_dir: str = Field("./chroma_db/brands", alias="CHROMA_BRAND_DIR")
+    chroma_visual_dir: str = Field("./chroma_db/visuals", alias="CHROMA_VISUAL_DIR")
+
 
 settings = Settings()  # type: ignore[call-arg]

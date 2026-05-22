@@ -10,6 +10,7 @@ from agents import (
     SocialMediaManagerAgent,
     QualityReviewerAgent,
 )
+from rag.dependencies import brand_store, visual_store
 import structlog
 
 logger = structlog.get_logger()
@@ -21,6 +22,33 @@ copywriter = CopywriterAgent()
 designer = DesignerAgent()
 social_media_manager = SocialMediaManagerAgent()
 quality_reviewer = QualityReviewerAgent()
+
+
+async def run_rag_context(state: CampaignState) -> dict:
+    """
+    First node in the graph: hydrate brand_rag_context and visual_rag_context
+    from the RAG stores. If no brand_id is set, returns empty strings and the
+    pipeline continues normally with only the inline BrandProfile.
+    """
+    if not state.brand_id:
+        logger.info("rag_skipped", reason="no brand_id provided")
+        return {}
+
+    query = f"{state.brief} {state.brand.name} {state.brand.tone}"
+
+    brand_context = brand_store.query(state.brand_id, query, k=6)
+    visual_context = visual_store.query(state.brand_id, query, k=3)
+
+    logger.info(
+        "rag_context_loaded",
+        brand_id=state.brand_id,
+        brand_chunks=brand_context.count("---") + 1 if brand_context else 0,
+        visual_refs=visual_context.count("Reference") if visual_context else 0,
+    )
+    return {
+        "brand_rag_context": brand_context,
+        "visual_rag_context": visual_context,
+    }
 
 
 async def run_brand_strategist(state: CampaignState) -> dict:
@@ -59,6 +87,7 @@ def should_revise(state: CampaignState) -> str:
 def build_graph() -> StateGraph:
     graph = StateGraph(CampaignState)
 
+    graph.add_node("rag_context", run_rag_context)
     graph.add_node("brand_strategist", run_brand_strategist)
     graph.add_node("creative_director", run_creative_director)
     graph.add_node("copywriter", run_copywriter)
@@ -66,7 +95,8 @@ def build_graph() -> StateGraph:
     graph.add_node("social_media_manager", run_social_media_manager)
     graph.add_node("quality_reviewer", run_quality_reviewer)
 
-    graph.set_entry_point("brand_strategist")
+    graph.set_entry_point("rag_context")
+    graph.add_edge("rag_context", "brand_strategist")
     graph.add_edge("brand_strategist", "creative_director")
     graph.add_edge("creative_director", "copywriter")
     graph.add_edge("copywriter", "designer")

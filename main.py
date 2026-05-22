@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes import router
+from api.rag_routes import router as rag_router
 from core.config import settings
 import structlog
 
@@ -25,6 +26,7 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(rag_router)
 
 
 if __name__ == "__main__":

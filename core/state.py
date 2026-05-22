@@ -78,9 +78,15 @@ class CampaignState(BaseModel):
     brief: str
     brand: BrandProfile
     platforms: list[Platform]
+    # Optional: link to a pre-ingested brand in the RAG stores
+    brand_id: str = ""
 
     # Agent outputs accumulated via append
     messages: Annotated[list[AgentMessage], operator.add] = Field(default_factory=list)
+
+    # RAG context injected before agents run
+    brand_rag_context: str = ""
+    visual_rag_context: str = ""
 
     # Working data
     creative_direction: str = ""

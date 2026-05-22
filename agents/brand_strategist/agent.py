@@ -11,7 +11,17 @@ class BrandStrategistAgent(BaseAgent):
     role = "Brand Strategist"
 
     async def run(self, state: CampaignState) -> dict:
-        self.log.info("analyzing_brand", brand=state.brand.name)
+        self.log.info("analyzing_brand", brand=state.brand.name, has_rag=bool(state.brand_rag_context))
+
+        rag_section = ""
+        if state.brand_rag_context:
+            rag_section = f"""
+### Brand Knowledge Base (RAG)
+Os seguintes trechos foram extraídos dos documentos oficiais da marca.
+Use-os como fonte primária de verdade sobre a marca:
+
+{state.brand_rag_context}
+"""
 
         user_prompt = f"""
 Brief da campanha: {state.brief}
@@ -23,7 +33,7 @@ Perfil de marca:
 - Cor primária: {state.brand.primary_color}
 - Cor secundária: {state.brand.secondary_color}
 - Cor de destaque: {state.brand.accent_color}
-
+{rag_section}
 Plataformas alvo: {[p.value for p in state.platforms]}
 
 Gere as diretrizes de posicionamento e linguagem visual para esta campanha.

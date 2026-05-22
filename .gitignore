@@ -11,5 +11,12 @@ output/flyers/*.png
 output/flyers/*.jpg
 output/flyers/*.webp
 output/reports/*.json
+# ChromaDB persistence (large binary files)
+chroma_db/
+# Brand assets uploaded locally
+brand_assets/docs/*
+brand_assets/images/*
+!brand_assets/docs/.gitkeep
+!brand_assets/images/.gitkeep
 dist/
 *.egg-info/

@@ -21,6 +21,7 @@ async def generate_flyers(request: GenerateFlyersRequest) -> GenerateFlyersRespo
         brief=request.brief,
         brand=request.brand,
         platforms=request.platforms,
+        brand_id=request.brand_id,
         status="running",
     )
 

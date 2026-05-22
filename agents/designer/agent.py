@@ -13,7 +13,11 @@ class DesignerAgent(BaseAgent):
     role = "Designer"
 
     async def run(self, state: CampaignState) -> dict:
-        self.log.info("designing_flyers", count=len(state.flyers))
+        self.log.info(
+            "designing_flyers",
+            count=len(state.flyers),
+            has_visual_rag=bool(state.visual_rag_context),
+        )
 
         flyers: dict[str, FlyerSpec] = dict(state.flyers)
 
@@ -32,6 +36,16 @@ class DesignerAgent(BaseAgent):
         }
 
     async def _build_visual_prompt(self, spec: FlyerSpec, state: CampaignState) -> str:
+        visual_rag_section = ""
+        if state.visual_rag_context:
+            visual_rag_section = f"""
+### Visual Style Guide (from brand reference images)
+These visual references define the brand's visual DNA.
+You MUST reflect this style in the image prompt:
+
+{state.visual_rag_context}
+"""
+
         user_prompt = f"""
 Direção criativa: {state.creative_direction}
 Plataforma: {spec.platform.value} ({spec.width}x{spec.height}px)
@@ -41,8 +55,9 @@ Call to action: {spec.call_to_action}
 Marca: {state.brand.name}
 Cores: {state.brand.primary_color} / {state.brand.secondary_color} / {state.brand.accent_color}
 Estilo: {state.brand.font_style}, tom {state.brand.tone}
-
-Crie um prompt detalhado para gerar esta imagem com gpt-image-1.
+{visual_rag_section}
+Crie um prompt detalhado em inglês para gerar esta imagem com gpt-image-1.
+O prompt deve capturar fielmente o estilo visual da marca definido acima.
 """
         return await self._chat(SYSTEM_PROMPT, user_prompt)
 

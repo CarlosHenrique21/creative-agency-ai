@@ -1,115 +1,119 @@
+"""
+ADK orchestration for the Social Media Agency pipeline.
+
+Pipeline (SequentialAgent):
+  brand_strategist → creative_director → revision_loop
+
+revision_loop (LoopAgent, max N iterations):
+  copywriter → designer → social_media_manager → quality_reviewer
+
+The LoopAgent exits when quality_reviewer sets session state status = "completed"
+or when max_iterations is reached.
+"""
 from __future__ import annotations
-from langgraph.graph import StateGraph, END
-from core.state import CampaignState
-from core.config import settings
+
+from google.adk.agents import SequentialAgent, LoopAgent
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai.types import Content, Part
+
 from agents import (
-    BrandStrategistAgent,
-    CreativeDirectorAgent,
-    CopywriterAgent,
-    DesignerAgent,
-    SocialMediaManagerAgent,
-    QualityReviewerAgent,
+    brand_strategist_agent,
+    creative_director_agent,
+    copywriter_agent,
+    designer_agent,
+    social_media_manager_agent,
+    quality_reviewer_agent,
 )
-from rag.dependencies import brand_store, visual_store
+from core.config import settings
+from core.state import CampaignInput
 import structlog
 
 logger = structlog.get_logger()
 
-# Instantiate agents once (they hold a shared AsyncOpenAI client)
-brand_strategist = BrandStrategistAgent()
-creative_director = CreativeDirectorAgent()
-copywriter = CopywriterAgent()
-designer = DesignerAgent()
-social_media_manager = SocialMediaManagerAgent()
-quality_reviewer = QualityReviewerAgent()
+APP_NAME = "social_media_agency"
+
+# Inner loop: copy → design → review (runs up to max_revision_cycles times)
+revision_loop = LoopAgent(
+    name="revision_loop",
+    max_iterations=settings.max_revision_cycles,
+    sub_agents=[
+        copywriter_agent,
+        designer_agent,
+        social_media_manager_agent,
+        quality_reviewer_agent,
+    ],
+)
+
+# Full pipeline
+agency_pipeline = SequentialAgent(
+    name="agency_pipeline",
+    description="Full social media flyer generation pipeline",
+    sub_agents=[
+        brand_strategist_agent,
+        creative_director_agent,
+        revision_loop,
+    ],
+)
+
+# Session service (in-memory; swap for DatabaseSessionService in production)
+_session_service = InMemorySessionService()
+
+# Runner wires the pipeline to the session service
+_runner = Runner(
+    agent=agency_pipeline,
+    app_name=APP_NAME,
+    session_service=_session_service,
+)
 
 
-async def run_rag_context(state: CampaignState) -> dict:
+async def run_campaign(campaign_input: CampaignInput) -> dict:
     """
-    First node in the graph: hydrate brand_rag_context and visual_rag_context
-    from the RAG stores. If no brand_id is set, returns empty strings and the
-    pipeline continues normally with only the inline BrandProfile.
+    Create an ADK session, run the full agency pipeline and return
+    the final session state as a plain dict.
     """
-    if not state.brand_id:
-        logger.info("rag_skipped", reason="no brand_id provided")
-        return {}
+    session_id = campaign_input.campaign_id
+    initial_state = campaign_input.to_session_state()
 
-    query = f"{state.brief} {state.brand.name} {state.brand.tone}"
-
-    brand_context = brand_store.query(state.brand_id, query, k=6)
-    visual_context = visual_store.query(state.brand_id, query, k=3)
+    session = await _session_service.create_session(
+        app_name=APP_NAME,
+        user_id="api",
+        session_id=session_id,
+        state=initial_state,
+    )
 
     logger.info(
-        "rag_context_loaded",
-        brand_id=state.brand_id,
-        brand_chunks=brand_context.count("---") + 1 if brand_context else 0,
-        visual_refs=visual_context.count("Reference") if visual_context else 0,
-    )
-    return {
-        "brand_rag_context": brand_context,
-        "visual_rag_context": visual_context,
-    }
-
-
-async def run_brand_strategist(state: CampaignState) -> dict:
-    return await brand_strategist.run(state)
-
-
-async def run_creative_director(state: CampaignState) -> dict:
-    return await creative_director.run(state)
-
-
-async def run_copywriter(state: CampaignState) -> dict:
-    return await copywriter.run(state)
-
-
-async def run_designer(state: CampaignState) -> dict:
-    return await designer.run(state)
-
-
-async def run_social_media_manager(state: CampaignState) -> dict:
-    return await social_media_manager.run(state)
-
-
-async def run_quality_reviewer(state: CampaignState) -> dict:
-    return await quality_reviewer.run(state)
-
-
-def should_revise(state: CampaignState) -> str:
-    if state.status == "completed":
-        return "done"
-    if state.revision_cycle >= settings.max_revision_cycles:
-        logger.warning("max_revisions_reached", cycle=state.revision_cycle)
-        return "done"
-    return "revise"
-
-
-def build_graph() -> StateGraph:
-    graph = StateGraph(CampaignState)
-
-    graph.add_node("rag_context", run_rag_context)
-    graph.add_node("brand_strategist", run_brand_strategist)
-    graph.add_node("creative_director", run_creative_director)
-    graph.add_node("copywriter", run_copywriter)
-    graph.add_node("designer", run_designer)
-    graph.add_node("social_media_manager", run_social_media_manager)
-    graph.add_node("quality_reviewer", run_quality_reviewer)
-
-    graph.set_entry_point("rag_context")
-    graph.add_edge("rag_context", "brand_strategist")
-    graph.add_edge("brand_strategist", "creative_director")
-    graph.add_edge("creative_director", "copywriter")
-    graph.add_edge("copywriter", "designer")
-    graph.add_edge("designer", "social_media_manager")
-    graph.add_edge("social_media_manager", "quality_reviewer")
-
-    graph.add_conditional_edges(
-        "quality_reviewer",
-        should_revise,
-        {"done": END, "revise": "copywriter"},
+        "campaign_started",
+        campaign_id=session_id,
+        brand_id=campaign_input.brand_id,
+        platforms=[p.value for p in campaign_input.platforms],
     )
 
-    return graph
+    # Kick off the pipeline with the campaign brief as the initial user message
+    kick_off = Content(
+        role="user",
+        parts=[Part(text=(
+            f"Inicie a campanha.\n"
+            f"Brief: {campaign_input.brief}\n"
+            f"Marca: {campaign_input.brand.name}\n"
+            f"Plataformas: {[p.value for p in campaign_input.platforms]}"
+        ))],
+    )
 
+    async for _event in _runner.run_async(
+        user_id="api",
+        session_id=session_id,
+        new_message=kick_off,
+    ):
+        # Events are streamed; we only need the final state
+        pass
 
-agency_graph = build_graph().compile()
+    final_session = await _session_service.get_session(
+        app_name=APP_NAME,
+        user_id="api",
+        session_id=session_id,
+    )
+
+    final_state: dict = dict(final_session.state) if final_session else initial_state
+    logger.info("campaign_completed", campaign_id=session_id, status=final_state.get("status"))
+    return final_state

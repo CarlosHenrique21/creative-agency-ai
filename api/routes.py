@@ -3,8 +3,8 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from models.requests import GenerateFlyersRequest
 from models.responses import GenerateFlyersResponse
-from core.state import CampaignState
-from core.orchestrator import agency_graph
+from core.state import CampaignInput
+from core.orchestrator import run_campaign
 import structlog
 
 router = APIRouter(prefix="/api/v1", tags=["flyers"])
@@ -16,22 +16,20 @@ async def generate_flyers(request: GenerateFlyersRequest) -> GenerateFlyersRespo
     campaign_id = str(uuid.uuid4())
     logger.info("campaign_started", campaign_id=campaign_id, brief=request.brief[:80])
 
-    initial_state = CampaignState(
+    campaign_input = CampaignInput(
         campaign_id=campaign_id,
         brief=request.brief,
         brand=request.brand,
         platforms=request.platforms,
         brand_id=request.brand_id,
-        status="running",
     )
 
     try:
-        final_state = await agency_graph.ainvoke(initial_state.model_dump())
+        final_state = await run_campaign(campaign_input)
     except Exception as exc:
         logger.error("campaign_failed", campaign_id=campaign_id, error=str(exc))
         raise HTTPException(status_code=500, detail=f"Campaign failed: {exc}") from exc
 
-    logger.info("campaign_completed", campaign_id=campaign_id, status=final_state.get("status"))
     return GenerateFlyersResponse.from_state(final_state)
 
 

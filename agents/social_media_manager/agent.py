@@ -1,34 +1,41 @@
-from __future__ import annotations
-from agents.base import BaseAgent
-from core.state import CampaignState
-from prompts.social_media_manager import SYSTEM_PROMPT
+from google.adk.agents import LlmAgent
 
+social_media_manager_agent = LlmAgent(
+    name="social_media_manager",
+    model="gemini-2.0-flash",
+    description="Revisa os flyers sob a ótica das melhores práticas de cada plataforma e registra o feedback no histórico.",
+    instruction="""Você é um Social Media Manager com 8+ anos de experiência.
 
-class SocialMediaManagerAgent(BaseAgent):
-    """Revisa os flyers sob a ótica das melhores práticas de cada plataforma."""
+Seu trabalho:
+Leia os flyers de session state (`flyers`) e avalie cada um contra as melhores
+práticas da sua plataforma. Não use tools — apenas produza um relatório de feedback
+estruturado no seu output que o Quality Reviewer usará a seguir.
 
-    name = "social_media_manager"
-    role = "Social Media Manager"
+Critérios por plataforma:
 
-    async def run(self, state: CampaignState) -> dict:
-        self.log.info("reviewing_platform_fit", platforms=len(state.flyers))
+INSTAGRAM FEED:
+- Texto ocupa menos de 20% da imagem
+- Cores vibrantes ou tema consistente com o feed
+- CTA visível sem scroll
 
-        feedback_parts: list[str] = []
+INSTAGRAM STORY:
+- Área segura respeitada (evitar extremidades)
+- Texto legível em telas pequenas
+- CTA de swipe-up contemplado
 
-        for platform_key, spec in state.flyers.items():
-            user_prompt = f"""
-Plataforma: {platform_key}
-Headline: {spec.headline}
-Subheadline: {spec.subheadline}
-Body copy: {spec.body_copy}
-CTA: {spec.call_to_action}
-Image prompt usado: {spec.image_prompt}
+LINKEDIN POST:
+- Tom profissional mantido
+- Valor de negócio claro no copy
+- Imagem não excessivamente "salesy"
 
-Avalie se este flyer segue as melhores práticas da plataforma {platform_key}.
-Forneça feedback específico e acionável. Se está aprovado, diga "APROVADO".
-"""
-            feedback = await self._chat(SYSTEM_PROMPT, user_prompt)
-            feedback_parts.append(f"[{platform_key}] {feedback}")
+LINKEDIN BANNER:
+- Proporcionalidade correta
+- Branding corporativo reforçado
 
-        full_feedback = "\n\n".join(feedback_parts)
-        return {"messages": self._message(full_feedback)}
+Para cada plataforma, escreva:
+[PLATAFORMA] STATUS: APROVADO | ATENÇÃO
+Observações: <feedback específico e acionável>
+
+Responda em português do Brasil.""",
+    tools=[],
+)

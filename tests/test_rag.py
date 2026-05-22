@@ -104,45 +104,37 @@ class TestVisualStoreHelpers:
                 assert result == ""
 
 
-# ------------------------------------------------------------------ Orchestrator RAG node
-class TestRagContextNode:
-    @pytest.mark.asyncio
-    async def test_rag_skipped_without_brand_id(self) -> None:
-        from core.orchestrator import run_rag_context
-        from core.state import CampaignState, BrandProfile, Platform
+# ------------------------------------------------------------------ RAG tools
+class TestRagTools:
+    def test_query_brand_knowledge_skips_without_brand_id(self) -> None:
+        from tools.rag_tools import query_brand_knowledge
+        from unittest.mock import MagicMock
 
-        state = CampaignState(
-            campaign_id="test",
-            brief="Test campaign",
-            brand=BrandProfile(name="TestBrand"),
-            platforms=[Platform.INSTAGRAM_FEED],
-            brand_id="",
-        )
-        result = await run_rag_context(state)
-        assert result == {}
+        ctx = MagicMock()
+        ctx.state = {"brand_id": ""}
+        result = query_brand_knowledge("test query", ctx)
+        assert result == ""
 
-    @pytest.mark.asyncio
-    async def test_rag_queries_stores_when_brand_id_provided(self) -> None:
-        from core.orchestrator import run_rag_context
-        from core.state import CampaignState, BrandProfile, Platform
+    def test_query_visual_references_skips_without_brand_id(self) -> None:
+        from tools.rag_tools import query_visual_references
+        from unittest.mock import MagicMock
 
-        state = CampaignState(
-            campaign_id="test",
-            brief="Eco product launch",
-            brand=BrandProfile(name="EcoBrand", tone="sustainable"),
-            platforms=[Platform.INSTAGRAM_FEED],
-            brand_id="ecobrand",
-        )
+        ctx = MagicMock()
+        ctx.state = {"brand_id": ""}
+        result = query_visual_references("visual query", ctx)
+        assert result == ""
 
-        with (
-            patch("core.orchestrator.brand_store") as mock_bs,
-            patch("core.orchestrator.visual_store") as mock_vs,
-        ):
-            mock_bs.query.return_value = "Brand values: sustainability."
-            mock_vs.query.return_value = "Visual DNA: earthy tones."
+    def test_query_brand_knowledge_calls_store(self) -> None:
+        from tools.rag_tools import query_brand_knowledge
+        from unittest.mock import MagicMock
 
-            result = await run_rag_context(state)
+        ctx = MagicMock()
+        ctx.state = {"brand_id": "ecobrand"}
 
-        assert result["brand_rag_context"] == "Brand values: sustainability."
-        assert result["visual_rag_context"] == "Visual DNA: earthy tones."
-        mock_bs.query.assert_called_once_with("ecobrand", pytest.approx, k=6)  # type: ignore[call-arg]
+        with patch("tools.rag_tools.brand_store") as mock_store:
+            mock_store.query.return_value = "Brand knowledge result"
+            result = query_brand_knowledge("sustainability values", ctx)
+
+        assert result == "Brand knowledge result"
+        mock_store.query.assert_called_once_with("ecobrand", "sustainability values", k=6)
+        assert ctx.state["brand_rag_context"] == "Brand knowledge result"

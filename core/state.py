@@ -1,8 +1,20 @@
+"""
+Campaign state models.
+
+The ADK passes state between agents via ToolContext.state (a plain dict).
+These Pydantic models are used at the API boundary for validation and
+serialisation, and as typed helpers when reading/writing the ADK session.
+
+ADK session keys (all strings):
+  campaign_id, brief, brand, brand_id,
+  platforms, brand_rag_context, visual_rag_context,
+  creative_direction, flyers, quality_scores,
+  revision_cycle, status, messages
+"""
 from __future__ import annotations
-from typing import Annotated, Literal
+from typing import Literal
 from pydantic import BaseModel, Field
 from enum import Enum
-import operator
 
 
 class Platform(str, Enum):
@@ -72,26 +84,27 @@ class QualityScore(BaseModel):
         self.approved = self.overall >= 7.5
 
 
-class CampaignState(BaseModel):
-    # Input
+class CampaignInput(BaseModel):
+    """Validated input received from the API — converted to ADK session state."""
     campaign_id: str
     brief: str
     brand: BrandProfile
     platforms: list[Platform]
-    # Optional: link to a pre-ingested brand in the RAG stores
     brand_id: str = ""
 
-    # Agent outputs accumulated via append
-    messages: Annotated[list[AgentMessage], operator.add] = Field(default_factory=list)
-
-    # RAG context injected before agents run
-    brand_rag_context: str = ""
-    visual_rag_context: str = ""
-
-    # Working data
-    creative_direction: str = ""
-    flyers: dict[str, FlyerSpec] = Field(default_factory=dict)
-    quality_scores: dict[str, QualityScore] = Field(default_factory=dict)
-    revision_cycle: int = 0
-    status: str = "pending"
-    error: str = ""
+    def to_session_state(self) -> dict:
+        return {
+            "campaign_id": self.campaign_id,
+            "brief": self.brief,
+            "brand": self.brand.model_dump(),
+            "brand_id": self.brand_id,
+            "platforms": [p.value for p in self.platforms],
+            "brand_rag_context": "",
+            "visual_rag_context": "",
+            "creative_direction": "",
+            "flyers": {},
+            "quality_scores": {},
+            "revision_cycle": 0,
+            "status": "running",
+            "messages": [],
+        }

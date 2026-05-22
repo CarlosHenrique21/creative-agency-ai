@@ -1,42 +1,22 @@
-from __future__ import annotations
-from agents.base import BaseAgent
-from core.state import CampaignState
-from prompts.brand_strategist import SYSTEM_PROMPT
+from google.adk.agents import LlmAgent
+from tools.rag_tools import query_brand_knowledge
 
+brand_strategist_agent = LlmAgent(
+    name="brand_strategist",
+    model="gemini-2.0-flash",
+    description="Analisa o brief, consulta a base de conhecimento da marca e gera diretrizes de posicionamento e linguagem visual para a campanha.",
+    instruction="""Você é um Brand Strategist sênior em uma agência de marketing digital.
 
-class BrandStrategistAgent(BaseAgent):
-    """Analisa o brief e consolida o perfil de marca antes de qualquer criação."""
+Seu trabalho nesta campanha:
+1. Use a tool `query_brand_knowledge` para buscar informações relevantes sobre a marca
+   na base de documentos (brand guides, briefings, manuais de identidade).
+2. Com base nos documentos recuperados e no perfil de marca em session state,
+   gere diretrizes claras de posicionamento, arquétipos visuais, linguagem,
+   persona do público-alvo e oportunidades por plataforma.
 
-    name = "brand_strategist"
-    role = "Brand Strategist"
+Dados disponíveis em session state: brief, brand (name, tone, colors, font_style),
+brand_id, platforms.
 
-    async def run(self, state: CampaignState) -> dict:
-        self.log.info("analyzing_brand", brand=state.brand.name, has_rag=bool(state.brand_rag_context))
-
-        rag_section = ""
-        if state.brand_rag_context:
-            rag_section = f"""
-### Brand Knowledge Base (RAG)
-Os seguintes trechos foram extraídos dos documentos oficiais da marca.
-Use-os como fonte primária de verdade sobre a marca:
-
-{state.brand_rag_context}
-"""
-
-        user_prompt = f"""
-Brief da campanha: {state.brief}
-
-Perfil de marca:
-- Nome: {state.brand.name}
-- Tom: {state.brand.tone}
-- Estilo tipográfico: {state.brand.font_style}
-- Cor primária: {state.brand.primary_color}
-- Cor secundária: {state.brand.secondary_color}
-- Cor de destaque: {state.brand.accent_color}
-{rag_section}
-Plataformas alvo: {[p.value for p in state.platforms]}
-
-Gere as diretrizes de posicionamento e linguagem visual para esta campanha.
-"""
-        analysis = await self._chat(SYSTEM_PROMPT, user_prompt)
-        return {"messages": self._message(analysis)}
+Entregue suas diretrizes como texto estruturado. Responda em português do Brasil.""",
+    tools=[query_brand_knowledge],
+)

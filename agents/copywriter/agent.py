@@ -1,59 +1,34 @@
-from __future__ import annotations
-from agents.base import BaseAgent
-from core.state import CampaignState, FlyerSpec
-from prompts.copywriter import SYSTEM_PROMPT, platform_copy_instructions
+from google.adk.agents import LlmAgent
+from tools.copy_tools import write_platform_copy
 
-
-class CopywriterAgent(BaseAgent):
-    """Escreve todos os textos dos flyers adaptados para cada plataforma."""
-
-    name = "copywriter"
-    role = "Copywriter"
-
-    async def run(self, state: CampaignState) -> dict:
-        self.log.info("writing_copy", platforms=len(state.platforms))
-
-        flyers: dict[str, FlyerSpec] = {}
-
-        for platform in state.platforms:
-            spec = state.flyers.get(platform.value, FlyerSpec(platform=platform))
-            spec.set_dimensions()
-
-            revision_context = (
-                f"\nFeedback da revisão anterior: {spec.revision_notes}"
-                if spec.revision_notes
-                else ""
-            )
-
-            user_prompt = f"""
-Brief: {state.brief}
-Direção criativa: {state.creative_direction}
-Plataforma: {platform.value} ({spec.width}x{spec.height}px)
-{platform_copy_instructions(platform)}
-{revision_context}
-
-Retorne EXATAMENTE neste formato JSON:
-{{
-  "headline": "...",
-  "subheadline": "...",
-  "body_copy": "...",
-  "call_to_action": "..."
-}}
+_PLATFORM_RULES = """
+Regras por plataforma:
+- instagram_feed  : headline ≤6 palavras, subheadline complementar, body ≤2 linhas, CTA direto
+- instagram_story : headline ≤4 palavras + CTA — o visual domina, texto mínimo
+- linkedin_post   : tom profissional, headline pode ser pergunta/afirmação bold, body ≤3 linhas com valor de negócio
+- linkedin_banner : headline institucional ≤6 palavras, subheadline de posicionamento, CTA sutil
 """
-            raw = await self._chat(SYSTEM_PROMPT, user_prompt)
 
-            import json, re
-            match = re.search(r"\{.*\}", raw, re.DOTALL)
-            if match:
-                data = json.loads(match.group())
-                spec.headline = data.get("headline", "")
-                spec.subheadline = data.get("subheadline", "")
-                spec.body_copy = data.get("body_copy", "")
-                spec.call_to_action = data.get("call_to_action", "")
+copywriter_agent = LlmAgent(
+    name="copywriter",
+    model="gemini-2.0-flash",
+    description="Escreve headline, subheadline, body copy e CTA para cada plataforma, salvando via tool.",
+    instruction=f"""Você é um Copywriter especialista em social media com foco em conversão.
 
-            flyers[platform.value] = spec
+Seu trabalho:
+Para CADA plataforma listada em session state (campo `platforms`), escreva os textos
+seguindo as regras abaixo e salve usando a tool `write_platform_copy`.
 
-        return {
-            "flyers": flyers,
-            "messages": self._message(f"Copies escritas para {len(flyers)} plataformas."),
-        }
+{_PLATFORM_RULES}
+
+Regras gerais:
+- Headlines com impacto imediato
+- CTAs específicos e urgentes
+- Nunca repita a mesma frase no headline e subheadline
+- Se `flyers[platform].revision_notes` existir, incorpore o feedback antes de reescrever
+- Chame `write_platform_copy` uma vez por plataforma
+
+Dados em session state: brief, brand, platforms, creative_direction, flyers (pode ter revision_notes).
+Responda em português do Brasil.""",
+    tools=[write_platform_copy],
+)

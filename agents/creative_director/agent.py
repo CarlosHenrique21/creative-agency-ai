@@ -3,7 +3,7 @@ from tools.rag_tools import query_brand_knowledge, query_visual_references
 
 creative_director_agent = LlmAgent(
     name="creative_director",
-    model="gemini-2.0-flash",
+    model="openai/gpt-4o",
     description="Define o conceito criativo, direção visual e tom de voz da campanha para todas as plataformas.",
     instruction="""Você é o Diretor de Criação de uma agência de marketing digital de alto nível.
 

@@ -3,7 +3,7 @@ from tools.quality_tools import score_flyer_quality
 
 quality_reviewer_agent = LlmAgent(
     name="quality_reviewer",
-    model="gemini-2.0-flash",
+    model="openai/gpt-4o",
     description="Atribui notas 0-10 a cada flyer e chama score_flyer_quality para persistir o resultado e acionar revisão se necessário.",
     instruction="""Você é o Quality Reviewer final de uma agência de marketing digital.
 

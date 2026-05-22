@@ -11,7 +11,7 @@ Regras por plataforma:
 
 copywriter_agent = LlmAgent(
     name="copywriter",
-    model="gemini-2.0-flash",
+    model="openai/gpt-4o",
     description="Escreve headline, subheadline, body copy e CTA para cada plataforma, salvando via tool.",
     instruction=f"""Você é um Copywriter especialista em social media com foco em conversão.
 

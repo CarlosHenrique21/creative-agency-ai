@@ -4,7 +4,7 @@ from tools.rag_tools import query_visual_references
 
 designer_agent = LlmAgent(
     name="designer",
-    model="gemini-2.0-flash",
+    model="openai/gpt-4o",
     description="Cria prompts visuais detalhados e gera as imagens dos flyers com gpt-image-1 via tool.",
     instruction="""Você é um Designer Visual especialista em criação de flyers para social media.
 

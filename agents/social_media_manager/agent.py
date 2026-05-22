@@ -2,7 +2,7 @@ from google.adk.agents import LlmAgent
 
 social_media_manager_agent = LlmAgent(
     name="social_media_manager",
-    model="gemini-2.0-flash",
+    model="openai/gpt-4o",
     description="Revisa os flyers sob a ótica das melhores práticas de cada plataforma e registra o feedback no histórico.",
     instruction="""Você é um Social Media Manager com 8+ anos de experiência.
 

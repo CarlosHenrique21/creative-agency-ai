@@ -3,7 +3,7 @@ from tools.rag_tools import query_brand_knowledge
 
 brand_strategist_agent = LlmAgent(
     name="brand_strategist",
-    model="gemini-2.0-flash",
+    model="openai/gpt-4o",
     description="Analisa o brief, consulta a base de conhecimento da marca e gera diretrizes de posicionamento e linguagem visual para a campanha.",
     instruction="""Você é um Brand Strategist sênior em uma agência de marketing digital.
 

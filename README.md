@@ -160,6 +160,50 @@ Documentação interativa: `http://localhost:8000/docs`
 
 ---
 
+## Testando com o ADK
+
+O ADK oferece duas formas nativas de testar o pipeline sem precisar subir a API.
+
+### Playground web (recomendado)
+
+```bash
+adk web
+```
+
+Abre `http://localhost:8000` com uma interface de chat onde você conversa diretamente
+com o pipeline. Os agentes rodam em sequência, você vê o estado sendo atualizado e
+os logs de cada tool call em tempo real.
+
+Exemplo de mensagem para iniciar um teste:
+
+> *Crie flyers para o lançamento da EcoBottle, uma garrafa sustentável para jovens de 18 a 30 anos. Use as plataformas instagram_feed e linkedin_post. Cores: verde #2D6A4F, branco e destaque #95D5B2. Tom jovem e sustentável.*
+
+### Terminal interativo
+
+```bash
+adk run .
+```
+
+Mesma experiência do playground, mas direto no terminal — útil para CI ou ambientes sem browser.
+
+### O que observar durante o teste
+
+| O que aparece | O que significa |
+|---|---|
+| `[brand_strategist]` respondendo | RAG de docs foi consultado, diretrizes geradas |
+| `query_visual_references` chamada | RAG visual ativo, keywords extraídas |
+| `write_platform_copy` chamada | Copy de cada plataforma salvo no estado |
+| `generate_flyer_image` chamada | gpt-image-1 gerando + logo sendo composta |
+| `score_flyer_quality` chamada | Notas atribuídas; se média < 7.5 o loop repete |
+| `status: completed` no estado final | Todos os flyers aprovados |
+
+### Sem brand_id (teste rápido sem RAG)
+
+Para um teste sem precisar ingerir documentos, basta não informar `brand_id`.
+Os agentes usam apenas o perfil de marca passado na mensagem.
+
+---
+
 ## Uso
 
 ### 1. Preparar os assets da marca (opcional mas recomendado)

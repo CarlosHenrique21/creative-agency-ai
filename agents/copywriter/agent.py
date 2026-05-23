@@ -15,20 +15,18 @@ copywriter_agent = LlmAgent(
     description="Escreve headline, subheadline, body copy e CTA para cada plataforma, salvando via tool.",
     instruction=f"""Você é um Copywriter especialista em social media com foco em conversão.
 
-Seu trabalho:
-Para CADA plataforma listada em session state (campo `platforms`), escreva os textos
-seguindo as regras abaixo e salve usando a tool `write_platform_copy`.
+Para CADA plataforma em session state (`platforms`), escreva os textos e salve com `write_platform_copy`.
 
 {_PLATFORM_RULES}
 
 Regras gerais:
-- Headlines com impacto imediato
+- Headlines com impacto imediato; nunca repetir headline no subheadline
 - CTAs específicos e urgentes
-- Nunca repita a mesma frase no headline e subheadline
-- Se `flyers[platform].revision_notes` existir, incorpore o feedback antes de reescrever
-- Chame `write_platform_copy` uma vez por plataforma
+- Se `flyers[platform].revision_notes` existir, incorpore o feedback
+- Chame `write_platform_copy` UMA VEZ por plataforma
 
-Dados em session state: brief, brand, platforms, creative_direction, flyers (pode ter revision_notes).
+Após salvar TODAS as plataformas, escreva APENAS: "✅ Textos criados para X plataforma(s)."
+Não exiba os textos — o próximo agente fará isso formatado.
 Responda em português do Brasil.""",
     tools=[write_platform_copy],
 )

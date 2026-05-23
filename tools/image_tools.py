@@ -4,7 +4,9 @@ then composite the brand logo on top via Pillow.
 """
 from __future__ import annotations
 
-import json
+import base64
+import os
+import uuid
 from google.adk.tools import ToolContext
 from openai import OpenAI
 
@@ -16,8 +18,8 @@ _client = OpenAI(api_key=settings.openai_api_key)
 
 _SIZE_MAP = {
     "square": "1024x1024",
-    "landscape": "1792x1024",
-    "portrait": "1024x1792",
+    "landscape": "1536x1024",
+    "portrait": "1024x1536",
 }
 
 
@@ -40,7 +42,7 @@ def generate_flyer_image(
         tool_context: ADK tool context (provides session state)
 
     Returns:
-        dict with image_b64 (base64 PNG) and status message
+        dict with image_path (saved PNG file) and status message
     """
     brand_id: str = tool_context.state.get("brand_id", "")
 
@@ -55,10 +57,10 @@ def generate_flyer_image(
     ratio = w / h
     if 0.9 <= ratio <= 1.1:
         size = "1024x1024"
-    elif ratio > 1.5:
-        size = "1792x1024"
+    elif ratio > 1.1:
+        size = "1536x1024"
     else:
-        size = "1024x1792"
+        size = "1024x1536"
 
     # Add technical requirements to prompt
     full_prompt = (
@@ -88,7 +90,6 @@ def generate_flyer_image(
         n=1,
         size=size,  # type: ignore[arg-type]
         quality=settings.image_quality,  # type: ignore[arg-type]
-        response_format="b64_json",
     )
 
     b64 = response.data[0].b64_json or ""
@@ -100,16 +101,25 @@ def generate_flyer_image(
     else:
         logo_note = "no brand_id — logo skipped"
 
-    # Persist result into session state so the next agent can access it
+    # Save image to disk — keep only the file path in session state to avoid
+    # flooding the LLM context window with raw base64 (~3M tokens per image).
+    output_dir = os.path.abspath(settings.output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+    filename = f"{platform_key}_{uuid.uuid4().hex[:8]}.png"
+    image_path = os.path.join(output_dir, filename)
+    with open(image_path, "wb") as f:
+        f.write(base64.b64decode(b64))
+
+    # Persist only metadata (no base64) into session state
     flyers: dict = tool_context.state.get("flyers", {})
     if platform_key in flyers:
-        flyers[platform_key]["image_b64"] = b64
+        flyers[platform_key]["image_path"] = image_path
         flyers[platform_key]["image_prompt"] = image_prompt
     tool_context.state["flyers"] = flyers
 
     return {
         "platform": platform_key,
-        "image_b64": b64,
+        "image_path": image_path,
         "size": size,
         "logo_status": logo_note,
         "status": "success",

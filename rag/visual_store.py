@@ -31,20 +31,20 @@ def _collection_name(brand_id: str) -> str:
     return f"{_COLLECTION_PREFIX}{brand_id}"
 
 
-_VISION_SYSTEM = """You are a senior visual art director.
-Analyse the provided image and return a JSON object with these exact keys:
+_VISION_SYSTEM = """You are a senior visual art director specializing in digital marketing assets.
+Analyse the provided image with extreme precision and return a JSON object with these exact keys:
 {
-  "style": "<overall aesthetic — e.g. minimalist, editorial, bold, organic>",
-  "color_palette": ["<hex or name>", ...],
-  "typography_feel": "<describe font weight, size contrast, spacing feel>",
-  "composition": "<layout structure — rule of thirds, centered, asymmetric, etc.>",
-  "mood": "<emotional tone — energetic, calm, luxurious, playful, etc.>",
-  "key_elements": ["<recurring visual element>", ...],
-  "lighting": "<natural, studio, dramatic, flat, etc.>",
-  "texture_and_depth": "<flat design, layered, photographic depth, etc.>",
-  "prompt_keywords": ["<English keyword for image generation>", ...]
+  "style": "<overall aesthetic — be very specific, e.g. 'dark SaaS landing page', 'neon-on-dark tech', 'minimalist fintech'>",
+  "color_palette": ["<exact hex codes if visible, e.g. '#0D1F15', '#00FF85', '#FFFFFF'>"],
+  "typography_feel": "<describe exactly: weight, size, color, contrast — e.g. 'extra-bold white headline, large scale, high contrast on dark'>",
+  "composition": "<exact layout — e.g. 'centered headline top half, CTA button pill-shaped bottom, dark background full bleed'>",
+  "mood": "<emotional tone — e.g. 'professional, tech-forward, trustworthy, modern SaaS'>",
+  "key_elements": ["<exact UI/design elements visible — e.g. 'pill-shaped CTA button', 'neon green accent', 'dark card', 'monospace code snippet'>"],
+  "lighting": "<flat, glowing, subtle gradient, etc.>",
+  "texture_and_depth": "<flat design, subtle noise texture, glassmorphism, etc.>",
+  "prompt_keywords": ["<precise English keywords for image generation — e.g. 'dark deep green background', 'neon green CTA button', 'bold white typography', 'SaaS marketing flyer', 'clean minimalist layout'>"]
 }
-Return ONLY valid JSON, no markdown."""
+Be extremely specific about colors, typography weight and layout. Return ONLY valid JSON, no markdown."""
 
 
 class VisualStore:
@@ -144,7 +144,18 @@ class VisualStore:
             "=== VISUAL STYLE GUIDE (from brand reference images) ===",
             "\n".join(f"• {note}" for note in style_notes),
             f"Key visual keywords: {', '.join(unique_keywords[:20])}",
-            "Match this visual DNA when composing the flyer.",
+            "",
+            "MANDATORY DESIGN ELEMENTS to replicate:",
+            "• Background: deep dark green #0D1F14 with subtle radial gradient",
+            "• Dark cards/panels: #152818 with rounded corners and subtle #1E3B22 border",
+            "• Pill badge at top: small rounded pill with neon green border, small white text",
+            "• Headline: extra-bold white, very large, 1-2 keywords in neon green #00FF85",
+            "• CTA button: solid neon green #00FF85 pill-shape, dark bold text, arrow →",
+            "• Secondary button (LinkedIn): dark outline pill, white text",
+            "• Trust badges at bottom: 3 items with ✓ green checkmark and light gray text",
+            "• Typography: sans-serif, no serifs, high contrast",
+            "• NO generic icons, NO clip art, NO stock photography",
+            "Match this visual DNA exactly when composing the flyer.",
         ]
         return "\n".join(guide_lines)
 

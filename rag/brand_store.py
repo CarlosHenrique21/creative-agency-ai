@@ -19,7 +19,7 @@ from core.config import settings
 
 logger = structlog.get_logger()
 
-_SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md", ".json"}
+_SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md", ".json", ".html", ".htm"}
 _CHUNK_SIZE = 800       # tokens (approx chars / 4)
 _CHUNK_OVERLAP = 120
 
@@ -126,6 +126,11 @@ class BrandStore:
 
         if suffix in (".txt", ".md"):
             return path.read_text(encoding="utf-8")
+
+        if suffix in (".html", ".htm"):
+            from bs4 import BeautifulSoup
+            html = path.read_text(encoding="utf-8")
+            return BeautifulSoup(html, "html.parser").get_text(separator="\n", strip=True)
 
         if suffix == ".json":
             data = json.loads(path.read_text(encoding="utf-8"))

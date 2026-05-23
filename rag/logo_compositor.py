@@ -31,7 +31,7 @@ _LOGO_DIR = Path("brand_assets/logo")
 _LOGO_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp")
 
 # Logo occupies this fraction of the shorter flyer dimension
-_LOGO_SCALE = 0.18
+_LOGO_SCALE = 0.32
 # Padding from edges in pixels (at 1080px reference)
 _PADDING_REF = 40
 _REF_SIZE = 1080
@@ -39,9 +39,9 @@ _REF_SIZE = 1080
 Placement = Literal["bottom_right", "bottom_left", "top_center", "left_center", "bottom_center"]
 
 _PLATFORM_PLACEMENT: dict[str, Placement] = {
-    "instagram_feed": "bottom_right",
+    "instagram_feed": "bottom_center",
     "instagram_story": "top_center",
-    "linkedin_post": "bottom_right",
+    "linkedin_post": "bottom_center",
     "linkedin_banner": "left_center",
 }
 
@@ -51,6 +51,7 @@ def find_logo(brand_id: str) -> Path | None:
     Look for a logo file in priority order:
       1. brand_assets/logo/<brand_id>.<ext>
       2. brand_assets/logo/default.<ext>
+      3. Any image file in brand_assets/logo/ (first match)
     Returns None if nothing is found.
     """
     for stem in (brand_id, "default"):
@@ -58,6 +59,12 @@ def find_logo(brand_id: str) -> Path | None:
             candidate = _LOGO_DIR / f"{stem}{ext}"
             if candidate.exists():
                 return candidate
+    # Fallback: pick any logo file present in the directory
+    if _LOGO_DIR.exists():
+        for ext in _LOGO_EXTENSIONS:
+            matches = sorted(_LOGO_DIR.glob(f"*{ext}"))
+            if matches:
+                return matches[0]
     return None
 
 

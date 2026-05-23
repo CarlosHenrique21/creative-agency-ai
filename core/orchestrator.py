@@ -1,14 +1,22 @@
 """
 ADK orchestration for the Social Media Agency pipeline.
 
-Pipeline (SequentialAgent):
-  brand_strategist → creative_director → revision_loop
+Fluxo interativo (com pausas para aprovação humana):
 
-revision_loop (LoopAgent, max N iterations):
-  copywriter → designer → social_media_manager → quality_reviewer
+FASE 1 — Pesquisa e escolha de tema:
+  brand_strategist → visual_analyst → market_analyst
+  [PAUSA — usuário escolhe o tema]
+  theme_selector
 
-The LoopAgent exits when quality_reviewer sets session state status = "completed"
-or when max_iterations is reached.
+FASE 2 — Direção criativa e textos:
+  creative_director → copywriter → copy_approver
+  [PAUSA — usuário aprova ou altera os textos]
+  copy_reviewer
+
+FASE 3 — Geração de imagens e revisão:
+  revision_loop (LoopAgent):
+    designer → social_media_manager → quality_reviewer
+  [quality_reviewer chama exit_loop quando aprovado]
 """
 from __future__ import annotations
 
@@ -19,8 +27,13 @@ from google.genai.types import Content, Part
 
 from agents import (
     brand_strategist_agent,
+    visual_analyst_agent,
+    market_analyst_agent,
+    theme_selector_agent,
     creative_director_agent,
     copywriter_agent,
+    copy_approver_agent,
+    copy_reviewer_agent,
     designer_agent,
     social_media_manager_agent,
     quality_reviewer_agent,
@@ -33,26 +46,36 @@ logger = structlog.get_logger()
 
 APP_NAME = "social_media_agency"
 
-# Inner loop: copy → design → review (runs up to max_revision_cycles times)
-revision_loop = LoopAgent(
-    name="revision_loop",
+# Fase 3 — Geração de imagens com revisão automática
+image_revision_loop = LoopAgent(
+    name="image_revision_loop",
     max_iterations=settings.max_revision_cycles,
     sub_agents=[
-        copywriter_agent,
         designer_agent,
         social_media_manager_agent,
         quality_reviewer_agent,
     ],
 )
 
-# Full pipeline
+# Pipeline completo com pausas para input humano
 agency_pipeline = SequentialAgent(
     name="agency_pipeline",
-    description="Full social media flyer generation pipeline",
+    description="Pipeline interativo de criação de flyers com aprovação humana em pontos-chave.",
     sub_agents=[
+        # Fase 1 — Pesquisa e escolha de tema
         brand_strategist_agent,
+        visual_analyst_agent,
+        market_analyst_agent,   # [PAUSA] aguarda usuário escolher tema
+        theme_selector_agent,   # processa escolha e seta selected_theme
+
+        # Fase 2 — Direção criativa e textos
         creative_director_agent,
-        revision_loop,
+        copywriter_agent,
+        copy_approver_agent,    # [PAUSA] aguarda aprovação/alteração dos textos
+        copy_reviewer_agent,    # processa resposta e aplica alterações se houver
+
+        # Fase 3 — Geração de imagens
+        image_revision_loop,
     ],
 )
 
@@ -89,7 +112,6 @@ async def run_campaign(campaign_input: CampaignInput) -> dict:
         platforms=[p.value for p in campaign_input.platforms],
     )
 
-    # Kick off the pipeline with the campaign brief as the initial user message
     kick_off = Content(
         role="user",
         parts=[Part(text=(
@@ -105,7 +127,6 @@ async def run_campaign(campaign_input: CampaignInput) -> dict:
         session_id=session_id,
         new_message=kick_off,
     ):
-        # Events are streamed; we only need the final state
         pass
 
     final_session = await _session_service.get_session(

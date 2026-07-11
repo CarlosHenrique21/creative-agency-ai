@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pathlib import Path
 from pydantic import BaseModel
 from core.state import QualityScore, AgentMessage
 
@@ -9,10 +10,48 @@ class FlyerResult(BaseModel):
     subheadline: str
     body_copy: str
     call_to_action: str
-    image_url: str
-    image_b64: str
-    image_prompt: str
+    image_path: str = ""
+    image_url: str = ""
+    image_b64: str = ""
+    image_prompt: str = ""
     quality: QualityScore | None = None
+
+
+class ContentResponse(BaseModel):
+    """Structured copy produced by the content flow (editable by the user)."""
+    platform: str
+    headline: str = ""
+    subheadline: str = ""
+    body_copy: str = ""
+    badge: str = ""
+    metric: str = ""
+    call_to_action: str = ""
+    trust_items: list[str] = []
+
+
+class GenerateImageResponse(BaseModel):
+    """A single flyer produced by the direct image flow."""
+    status: str
+    platform: str
+    image_path: str
+    image_url: str
+    size: str
+    used_references: int
+    metric_status: str
+    logo_status: str
+
+
+class FlyerVariation(BaseModel):
+    path: str   # absolute path on the server
+    url: str    # URL served via the /files static mount
+
+
+class ImproveFlyerResponse(BaseModel):
+    status: str
+    source: str
+    count: int
+    used_references: bool
+    variations: list[FlyerVariation]
 
 
 class GenerateFlyersResponse(BaseModel):
@@ -29,6 +68,12 @@ class GenerateFlyersResponse(BaseModel):
         scores_raw: dict[str, dict] = state.get("quality_scores", {})
         messages_raw: list[dict] = state.get("messages", [])
 
+        def _url(spec: dict) -> str:
+            path = spec.get("image_path", "")
+            if path:
+                return f"/files/{Path(path).name}"
+            return spec.get("image_url", "")
+
         flyers = [
             FlyerResult(
                 platform=key,
@@ -36,7 +81,8 @@ class GenerateFlyersResponse(BaseModel):
                 subheadline=spec.get("subheadline", ""),
                 body_copy=spec.get("body_copy", ""),
                 call_to_action=spec.get("call_to_action", ""),
-                image_url=spec.get("image_url", ""),
+                image_path=spec.get("image_path", ""),
+                image_url=_url(spec),
                 image_b64=spec.get("image_b64", ""),
                 image_prompt=spec.get("image_prompt", ""),
                 quality=QualityScore(**scores_raw[key]) if key in scores_raw else None,

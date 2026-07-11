@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bússola Fiscal — Studio de Flyers</title>
+<style>
+  :root {
+    --bg: #052A10; --bg2: #0B4A1E; --mid: #1A7A3A; --cta: #2DA84F;
+    --light: #4DC76A; --gold: #C8931A; --white: #FFFFFF; --gray: #E8EDEA;
+    --muted: #5C7063; --black: #0A1A0D; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: radial-gradient(circle at 50% 0%, #0B4A1E 0%, #052A10 60%, #0A1A0D 100%);
+    color: var(--gray); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    min-height: 100vh;
+  }
+  header {
+    display: flex; align-items: center; gap: 16px; padding: 18px 28px;
+    border-bottom: 1px solid var(--bg2); position: sticky; top: 0;
+    background: rgba(5,42,16,.85); backdrop-filter: blur(8px); z-index: 10; flex-wrap: wrap;
+  }
+  .logo { font-weight: 800; font-size: 20px; color: var(--white); letter-spacing: -.3px; }
+  .logo span { color: var(--cta); }
+  .grow { flex: 1; }
+  .health { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .dot.ok { background: var(--cta); box-shadow: 0 0 8px var(--cta); }
+  .dot.bad { background: #FF5F57; }
+  label { display: block; font-size: 13px; color: var(--gray); margin: 12px 0 5px; font-weight: 600; }
+  input, textarea, select {
+    width: 100%; background: var(--black); border: 1px solid var(--mid); color: var(--white);
+    padding: 10px 12px; border-radius: 10px; font-size: 14px; font-family: inherit;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--cta); }
+  textarea { resize: vertical; min-height: 70px; }
+  .brandbar { display: flex; align-items: center; gap: 10px; }
+  .brandbar label { margin: 0; white-space: nowrap; }
+  .brandbar input { width: 220px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .tab {
+    padding: 10px 18px; border-radius: 999px; border: 1px solid var(--mid);
+    background: transparent; color: var(--gray); cursor: pointer; font-size: 14px; font-weight: 600;
+  }
+  .tab.active { background: var(--cta); color: var(--black); border-color: var(--cta); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card {
+    background: var(--bg2); border: 1px solid var(--mid); border-radius: var(--radius);
+    padding: 20px; margin-bottom: 18px;
+  }
+  .card h2 { margin: 0 0 4px; color: var(--white); font-size: 17px; }
+  .card .hint { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+  .step { display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center;
+    background: var(--cta); color: var(--black); border-radius: 50%; font-weight: 800; font-size: 12px; margin-right: 8px; }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 150px; }
+  .btn {
+    background: var(--cta); color: var(--black); border: none; padding: 11px 22px;
+    border-radius: 999px; font-weight: 700; cursor: pointer; font-size: 14px; margin-top: 16px;
+  }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.secondary { background: transparent; color: var(--light); border: 1px solid var(--mid); }
+  .btn.danger { background: transparent; color: #FF8A80; border: 1px solid #7a2a26; }
+  .btn.sm { padding: 6px 14px; font-size: 12px; margin-top: 0; }
+  .platforms { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .chk {
+    display: flex; align-items: center; gap: 7px; background: var(--black); border: 1px solid var(--mid);
+    padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; user-select: none;
+  }
+  .chk input { width: auto; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .flyer { background: var(--black); border: 1px solid var(--mid); border-radius: var(--radius); overflow: hidden; }
+  .flyer img { width: 100%; display: block; background: #021; }
+  .flyer .meta { padding: 12px; }
+  .flyer .plat { font-size: 11px; color: var(--light); text-transform: uppercase; letter-spacing: 1px; }
+  .flyer .hl { color: var(--white); font-weight: 700; margin: 4px 0; font-size: 14px; }
+  .badge { display: inline-block; font-size: 11px; padding: 3px 9px; border-radius: 999px; margin-top: 6px; }
+  .badge.ok { background: rgba(45,168,79,.2); color: var(--light); border: 1px solid var(--cta); }
+  .badge.no { background: rgba(255,95,87,.15); color: #FF8A80; border: 1px solid #7a2a26; }
+  .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .drop {
+    border: 2px dashed var(--mid); border-radius: 12px; padding: 22px; text-align: center;
+    color: var(--muted); cursor: pointer; font-size: 13px;
+  }
+  .drop.has { border-color: var(--cta); color: var(--light); }
+  .preview { margin-top: 12px; max-height: 200px; border-radius: 10px; display: none; }
+  pre.out {
+    background: var(--black); border: 1px solid var(--mid); border-radius: 10px; padding: 12px;
+    font-size: 12px; color: var(--gray); overflow: auto; max-height: 260px; white-space: pre-wrap;
+  }
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    background: var(--bg2); border: 1px solid var(--cta); color: var(--white);
+    padding: 12px 20px; border-radius: 10px; font-size: 14px; opacity: 0; transition: opacity .3s;
+    pointer-events: none; z-index: 50; max-width: 90%;
+  }
+  .toast.show { opacity: 1; }
+  .toast.err { border-color: #FF5F57; }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: var(--white);
+    border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; vertical-align: -3px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .muted { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Bússola<span>Fiscal</span> · Studio</div>
+  <div class="brandbar">
+    <label>brand_id</label>
+    <input id="brandId" value="bussola" placeholder="ex: bussola" />
+  </div>
+  <div class="grow"></div>
+  <div class="health"><span id="healthDot" class="dot"></span><span id="healthTxt">verificando…</span></div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab active" data-tab="content">1️⃣ Conteúdo</button>
+    <button class="tab" data-tab="image">2️⃣ Imagem</button>
+    <button class="tab" data-tab="imp">✨ Melhorar</button>
+    <button class="tab" data-tab="advanced">⚙️ Avançado</button>
+    <button class="tab" data-tab="brand">🏷️ Marca & Assets</button>
+  </div>
+
+  <!-- ============ 1. CONTEÚDO ============ -->
+  <section class="panel active" id="content">
+    <div class="card">
+      <h2><span class="step">1</span>Gerar o conteúdo (copy)</h2>
+      <p class="hint">Descreva a campanha e a IA escreve os textos da postagem. Você revisa e edita antes de gerar a imagem.</p>
+      <label>Brief da campanha</label>
+      <textarea id="cBrief" placeholder="Ex: Lançamento da classificação NCM por IA para importadores...">Campanha para apresentar a classificação fiscal NCM por IA da Bússola Fiscal a importadores e despachantes.</textarea>
+      <div class="row">
+        <div>
+          <label>Plataforma</label>
+          <select id="cPlatform">
+            <option value="instagram_feed">Instagram Feed (1080×1080)</option>
+            <option value="instagram_story">Instagram Story (1080×1920)</option>
+            <option value="linkedin_post">LinkedIn Post (1200×627)</option>
+            <option value="linkedin_banner">LinkedIn Banner (1584×396)</option>
+          </select>
+        </div>
+        <div><label>Nome da marca</label><input id="cBrand" value="Bússola Fiscal" /></div>
+        <div><label>Tom de voz</label><input id="cTone" value="técnico e confiável" /></div>
+      </div>
+      <label>Direção extra (opcional)</label>
+      <input id="cExtra" placeholder="Ex: enfatizar economia de tempo, tom mais urgente" />
+      <button class="btn" id="cBtn">Gerar conteúdo</button>
+    </div>
+
+    <div class="card" id="cResultCard" style="display:none">
+      <h2>Conteúdo gerado — edite à vontade</h2>
+      <p class="hint">Esses textos serão compostos sobre a imagem. Use **asteriscos duplos** na headline para destacar palavras em verde.</p>
+      <div class="row">
+        <div><label>Headline</label><input id="fHeadline" /></div>
+        <div><label>Subheadline</label><input id="fSub" /></div>
+      </div>
+      <label>Body copy</label>
+      <textarea id="fBody"></textarea>
+      <div class="row">
+        <div><label>Badge (selo)</label><input id="fBadge" placeholder="ex: PLATAFORMA" /></div>
+        <div><label>Métrica (fato real)</label><input id="fMetric" placeholder="ex: 131 regras NCM" /></div>
+        <div><label>CTA</label><input id="fCta" /></div>
+      </div>
+      <label>Itens de confiança (um por linha)</label>
+      <textarea id="fTrust" placeholder="LGPD compliant&#10;Dados criptografados"></textarea>
+      <button class="btn" id="cToImage">Usar este conteúdo → ir para Imagem</button>
+    </div>
+  </section>
+
+  <!-- ============ 2. IMAGEM ============ -->
+  <section class="panel" id="image">
+    <div class="card">
+      <h2><span class="step">2</span>Gerar a imagem</h2>
+      <p class="hint">Envie uma imagem de referência (estilo/layout desejado). A IA absorve o visual dela + o conteúdo abaixo e cria a postagem final.</p>
+      <div class="drop" id="imgDrop">📁 Clique ou arraste a imagem de referência (PNG/JPG/WEBP)</div>
+      <input id="imgRef" type="file" accept=".png,.jpg,.jpeg,.webp" style="display:none" />
+      <img id="imgRefPreview" class="preview" alt="referência" />
+      <div class="row">
+        <div>
+          <label>Plataforma</label>
+          <select id="iPlatform">
+            <option value="instagram_feed">Instagram Feed (1080×1080)</option>
+            <option value="instagram_story">Instagram Story (1080×1920)</option>
+            <option value="linkedin_post">LinkedIn Post (1200×627)</option>
+            <option value="linkedin_banner">LinkedIn Banner (1584×396)</option>
+          </select>
+        </div>
+        <div>
+          <label>Direção extra da cena (opcional)</label>
+          <input id="iPrompt" placeholder="Ex: mais glow no canto, cards flutuando" />
+        </div>
+      </div>
+
+      <div class="card" style="background:var(--black); margin-top:14px">
+        <h2 style="font-size:15px">Conteúdo a compor</h2>
+        <p class="hint">Preenchido automaticamente pela aba Conteúdo — ou edite manualmente aqui.</p>
+        <div class="row">
+          <div><label>Headline</label><input id="iHeadline" /></div>
+          <div><label>Subheadline</label><input id="iSub" /></div>
+        </div>
+        <label>Body copy</label>
+        <textarea id="iBody"></textarea>
+        <div class="row">
+          <div><label>Badge</label><input id="iBadge" /></div>
+          <div><label>Métrica</label><input id="iMetric" /></div>
+          <div><label>CTA</label><input id="iCta" /></div>
+        </div>
+        <label>Itens de confiança (um por linha)</label>
+        <textarea id="iTrust"></textarea>
+      </div>
+
+      <button class="btn" id="iBtn">Gerar imagem</button>
+      <span class="muted" id="iNote" style="margin-left:12px"></span>
+    </div>
+    <div id="iResults" class="grid"></div>
+  </section>
+
+  <!-- ============ MELHORAR ============ -->
+  <section class="panel" id="imp">
+    <div class="card">
+      <h2>Melhorar um flyer existente</h2>
+      <p class="hint">Refina a arte mantendo o texto. Faça upload de uma imagem OU informe o caminho de um flyer já gerado.</p>
+      <div class="drop" id="impDrop">📁 Clique ou arraste uma imagem (PNG/JPG/WEBP)</div>
+      <input id="impFile" type="file" accept=".png,.jpg,.jpeg,.webp" style="display:none" />
+      <label>…ou caminho server-side (image_path)</label>
+      <input id="impPath" placeholder="/.../output/flyers/instagram_feed_xxxx.png" />
+      <div class="row">
+        <div>
+          <label>Instruções extras</label>
+          <input id="impInstr" placeholder="Ex: mais contraste no CTA, fundo com mais profundidade" />
+        </div>
+        <div style="max-width:140px">
+          <label>Variações</label>
+          <input id="impN" type="number" min="1" max="4" value="2" />
+        </div>
+      </div>
+      <button class="btn" id="impBtn">Melhorar</button>
+    </div>
+    <div id="impResults" class="grid"></div>
+  </section>
+
+  <!-- ============ AVANÇADO (pipeline multiagente) ============ -->
+  <section class="panel" id="advanced">
+    <div class="card">
+      <h2>Pipeline multiagente (avançado)</h2>
+      <p class="hint">Fluxo ponta-a-ponta autônomo: os agentes pesquisam o mercado, escrevem os textos, geram o fundo on-brand a partir dos assets do RAG e revisam a qualidade. Usa os assets do brand_id acima.</p>
+      <label>Brief da campanha</label>
+      <textarea id="brief" placeholder="Ex: Lançamento da classificação NCM por IA para importadores...">Campanha para apresentar a classificação fiscal NCM por IA da Bússola Fiscal a importadores e despachantes.</textarea>
+      <div class="row">
+        <div><label>Nome da marca</label><input id="bName" value="Bússola Fiscal" /></div>
+        <div><label>Tom de voz</label><input id="bTone" value="técnico e confiável" /></div>
+        <div><label>Estilo de fonte</label><input id="bFont" value="modern sans-serif" /></div>
+      </div>
+      <div class="row">
+        <div><label>Cor primária</label><input id="bC1" type="color" value="#052A10" /></div>
+        <div><label>Cor secundária</label><input id="bC2" type="color" value="#FFFFFF" /></div>
+        <div><label>Cor de destaque</label><input id="bC3" type="color" value="#2DA84F" /></div>
+      </div>
+      <label>Descrição do logo</label>
+      <input id="bLogo" value="bússola estilizada em verde" />
+      <label>Plataformas</label>
+      <div class="platforms" id="platforms">
+        <label class="chk"><input type="checkbox" value="instagram_feed" checked> Instagram Feed</label>
+        <label class="chk"><input type="checkbox" value="instagram_story"> Instagram Story</label>
+        <label class="chk"><input type="checkbox" value="linkedin_post" checked> LinkedIn Post</label>
+        <label class="chk"><input type="checkbox" value="linkedin_banner"> LinkedIn Banner</label>
+      </div>
+      <button class="btn" id="genBtn">Rodar pipeline</button>
+      <span class="muted" id="genNote" style="margin-left:12px"></span>
+    </div>
+    <div id="genResults" class="grid"></div>
+  </section>
+
+  <!-- ============ MARCA / RAG ============ -->
+  <section class="panel" id="brand">
+    <div class="card">
+      <h2>Assets da marca</h2>
+      <p class="hint">Tudo usa o <b>brand_id</b> do topo. Documentos e imagens alimentam o RAG (pipeline avançado); o logo é aplicado em todo flyer.</p>
+      <div class="actions">
+        <button class="btn secondary sm" id="assetsBtn">Listar assets</button>
+        <button class="btn danger sm" id="delBrandBtn">Apagar tudo da marca</button>
+      </div>
+      <pre class="out" id="assetsOut" style="display:none"></pre>
+    </div>
+
+    <div class="row">
+      <div class="card" style="flex:1; min-width:280px">
+        <h2>📄 Documentos</h2>
+        <p class="hint">PDF, DOCX, TXT, MD, JSON — chunked e embeddados no RAG.</p>
+        <input id="docFiles" type="file" multiple accept=".pdf,.docx,.txt,.md,.json" />
+        <button class="btn sm" id="docBtn">Enviar documentos</button>
+      </div>
+      <div class="card" style="flex:1; min-width:280px">
+        <h2>🖼️ Imagens de referência</h2>
+        <p class="hint">Analisadas com Vision; viram DNA visual para o pipeline avançado.</p>
+        <input id="imgFiles" type="file" multiple accept=".png,.jpg,.jpeg,.webp,.gif" />
+        <button class="btn sm" id="imgBtn">Enviar imagens</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🟢 Logo</h2>
+      <p class="hint">PNG com transparência recomendado. Substitui o logo atual desta marca.</p>
+      <div class="actions">
+        <input id="logoFile" type="file" accept=".png,.jpg,.jpeg,.webp" style="flex:1; min-width:200px" />
+        <button class="btn sm" id="logoBtn">Enviar logo</button>
+        <button class="btn danger sm" id="logoDelBtn">Remover logo</button>
+      </div>
+    </div>
+    <pre class="out" id="brandOut" style="display:none"></pre>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = ""; // mesma origem do FastAPI
+const $ = (id) => document.getElementById(id);
+const brandId = () => $("brandId").value.trim() || "bussola";
+
+function toast(msg, isErr) {
+  const t = $("toast");
+  t.textContent = msg; t.className = "toast show" + (isErr ? " err" : "");
+  setTimeout(() => (t.className = "toast"), 3800);
+}
+function busy(btn, on, label) {
+  btn.disabled = on;
+  if (on) { btn.dataset.txt = btn.textContent; btn.innerHTML = '<span class="spinner"></span> ' + (label || "..."); }
+  else if (btn.dataset.txt) { btn.textContent = btn.dataset.txt; }
+}
+async function api(path, opts) {
+  const res = await fetch(API + path, opts);
+  const ct = res.headers.get("content-type") || "";
+  const data = ct.includes("json") ? await res.json() : await res.text();
+  if (!res.ok) throw new Error(typeof data === "string" ? data : (data.detail ? JSON.stringify(data.detail) : "Erro " + res.status));
+  return data;
+}
+const linesToArr = (s) => s.split("\n").map(x => x.trim()).filter(Boolean);
+const arrToLines = (a) => (a || []).join("\n");
+
+// ---- tabs ----
+function goTab(name) {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("active", x.dataset.tab === name));
+  document.querySelectorAll(".panel").forEach(x => x.classList.toggle("active", x.id === name));
+}
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => goTab(t.dataset.tab));
+
+// ---- health ----
+(async () => {
+  try { await api("/api/v1/health"); $("healthDot").className = "dot ok"; $("healthTxt").textContent = "API online"; }
+  catch { $("healthDot").className = "dot bad"; $("healthTxt").textContent = "API offline"; }
+})();
+
+// ================= 1. CONTEÚDO =================
+$("cBtn").onclick = async () => {
+  const brief = $("cBrief").value.trim();
+  if (brief.length < 10) return toast("O brief precisa de ao menos 10 caracteres", true);
+  busy($("cBtn"), true, "Escrevendo…");
+  try {
+    const data = await api("/api/v1/content/generate", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brief,
+        platform: $("cPlatform").value,
+        brand_name: $("cBrand").value,
+        tone: $("cTone").value,
+        extra_instructions: $("cExtra").value,
+      }),
+    });
+    $("fHeadline").value = data.headline || "";
+    $("fSub").value = data.subheadline || "";
+    $("fBody").value = data.body_copy || "";
+    $("fBadge").value = data.badge || "";
+    $("fMetric").value = data.metric || "";
+    $("fCta").value = data.call_to_action || "";
+    $("fTrust").value = arrToLines(data.trust_items);
+    $("cResultCard").style.display = "block";
+    toast("Conteúdo gerado — revise e siga para a imagem");
+  } catch (e) { toast(e.message, true); }
+  finally { busy($("cBtn"), false); }
+};
+
+// Levar o conteúdo para a aba Imagem
+$("cToImage").onclick = () => {
+  $("iHeadline").value = $("fHeadline").value;
+  $("iSub").value = $("fSub").value;
+  $("iBody").value = $("fBody").value;
+  $("iBadge").value = $("fBadge").value;
+  $("iMetric").value = $("fMetric").value;
+  $("iCta").value = $("fCta").value;
+  $("iTrust").value = $("fTrust").value;
+  $("iPlatform").value = $("cPlatform").value;
+  goTab("image");
+  toast("Conteúdo carregado na aba Imagem");
+};
+
+// ================= 2. IMAGEM =================
+let refFile = null;
+function setImgDrop(file) {
+  const d = $("imgDrop"), p = $("imgRefPreview");
+  refFile = file || null;
+  if (file) {
+    d.textContent = "✓ " + file.name; d.classList.add("has");
+    p.src = URL.createObjectURL(file); p.style.display = "block";
+  } else {
+    d.textContent = "📁 Clique ou arraste a imagem de referência (PNG/JPG/WEBP)";
+    d.classList.remove("has"); p.style.display = "none";
+  }
+}
+$("imgDrop").onclick = () => $("imgRef").click();
+$("imgRef").onchange = () => setImgDrop($("imgRef").files[0] || null);
+$("imgDrop").ondragover = (e) => { e.preventDefault(); $("imgDrop").classList.add("has"); };
+$("imgDrop").ondrop = (e) => {
+  e.preventDefault(); const f = e.dataTransfer.files[0];
+  if (f) { $("imgRef").files = e.dataTransfer.files; setImgDrop(f); }
+};
+
+$("iBtn").onclick = async () => {
+  if (!refFile) return toast("Envie uma imagem de referência", true);
+  const headline = $("iHeadline").value.trim();
+  if (!headline) return toast("A headline é obrigatória", true);
+  const fd = new FormData();
+  fd.append("reference", refFile);
+  fd.append("platform", $("iPlatform").value);
+  fd.append("headline", headline);
+  fd.append("subheadline", $("iSub").value);
+  fd.append("body_copy", $("iBody").value);
+  fd.append("badge", $("iBadge").value);
+  fd.append("metric", $("iMetric").value);
+  fd.append("call_to_action", $("iCta").value);
+  fd.append("trust_items", linesToArr($("iTrust").value).join("|"));
+  fd.append("image_prompt", $("iPrompt").value);
+  fd.append("brand_id", brandId());
+  busy($("iBtn"), true, "Gerando imagem…");
+  $("iNote").textContent = "A IA está compondo a postagem…";
+  try {
+    const data = await api("/api/v1/images/generate", { method: "POST", body: fd });
+    const box = $("iResults"); box.innerHTML = "";
+    const div = document.createElement("div"); div.className = "flyer";
+    div.innerHTML = `<img src="${data.image_url}" alt="${data.platform}">
+      <div class="meta">
+        <div class="plat">${data.platform} · ${data.size}</div>
+        <div class="hl">${headline.replace(/\*\*/g, "")}</div>
+        <span class="badge ${data.logo_status.includes("composited") ? "ok" : "no"}">${data.logo_status}</span>
+        <div class="actions">
+          <a class="btn secondary sm" href="${data.image_url}" download>Baixar</a>
+          <button class="btn sm" id="sendImp">Melhorar este</button>
+        </div>
+      </div>`;
+    box.appendChild(div);
+    div.querySelector("#sendImp").onclick = () => {
+      $("impPath").value = data.image_path; $("impFile").value = ""; setImpDrop(null);
+      goTab("imp"); toast("Caminho preenchido na aba Melhorar");
+    };
+    $("iNote").textContent = data.metric_status === "ok" ? "" : "⚠ " + data.metric_status;
+    toast("Imagem gerada");
+  } catch (e) { toast(e.message, true); $("iNote").textContent = ""; }
+  finally { busy($("iBtn"), false); }
+};
+
+// ================= MELHORAR =================
+function setImpDrop(file) {
+  const d = $("impDrop");
+  if (file) { d.textContent = "✓ " + file.name; d.classList.add("has"); }
+  else { d.textContent = "📁 Clique ou arraste uma imagem (PNG/JPG/WEBP)"; d.classList.remove("has"); }
+}
+$("impDrop").onclick = () => $("impFile").click();
+$("impFile").onchange = () => setImpDrop($("impFile").files[0] || null);
+$("impDrop").ondragover = (e) => { e.preventDefault(); $("impDrop").classList.add("has"); };
+$("impDrop").ondrop = (e) => {
+  e.preventDefault(); const f = e.dataTransfer.files[0];
+  if (f) { $("impFile").files = e.dataTransfer.files; setImpDrop(f); $("impPath").value = ""; }
+};
+$("impBtn").onclick = async () => {
+  const file = $("impFile").files[0];
+  const path = $("impPath").value.trim();
+  if (!file && !path) return toast("Faça upload de uma imagem ou informe o image_path", true);
+  const fd = new FormData();
+  if (file) fd.append("file", file);
+  if (path) fd.append("image_path", path);
+  fd.append("instructions", $("impInstr").value);
+  fd.append("n_variations", $("impN").value || "1");
+  busy($("impBtn"), true, "Melhorando…");
+  try {
+    const data = await api("/api/v1/flyers/improve", { method: "POST", body: fd });
+    const box = $("impResults"); box.innerHTML = "";
+    (data.variations || []).forEach((v, i) => {
+      const div = document.createElement("div"); div.className = "flyer";
+      div.innerHTML = `<img src="${v.url}" alt="var ${i + 1}">
+        <div class="meta"><div class="plat">variação ${i + 1}</div>
+        <div class="actions"><a class="btn secondary sm" href="${v.url}" download>Baixar</a></div></div>`;
+      box.appendChild(div);
+    });
+    toast(`${data.count} variação(ões) gerada(s)`);
+  } catch (e) { toast(e.message, true); }
+  finally { busy($("impBtn"), false); }
+};
+
+// ================= AVANÇADO (pipeline) =================
+$("genBtn").onclick = async () => {
+  const platforms = [...document.querySelectorAll("#platforms input:checked")].map(c => c.value);
+  if (!platforms.length) return toast("Selecione ao menos uma plataforma", true);
+  const body = {
+    brief: $("brief").value.trim(),
+    brand_id: brandId(),
+    platforms,
+    brand: {
+      name: $("bName").value, tone: $("bTone").value, font_style: $("bFont").value,
+      primary_color: $("bC1").value, secondary_color: $("bC2").value, accent_color: $("bC3").value,
+      logo_description: $("bLogo").value,
+    },
+  };
+  if (body.brief.length < 10) return toast("O brief precisa de ao menos 10 caracteres", true);
+  busy($("genBtn"), true, "Rodando (pode levar 1-2 min)…");
+  $("genNote").textContent = "O pipeline está rodando os agentes…";
+  try {
+    const data = await api("/api/v1/flyers/generate", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    });
+    renderFlyers(data.flyers || []);
+    $("genNote").textContent = `Status: ${data.status} · ${data.revision_cycles} ciclo(s) de revisão`;
+    toast(`${(data.flyers || []).length} flyer(s) gerado(s)`);
+  } catch (e) { toast(e.message, true); $("genNote").textContent = ""; }
+  finally { busy($("genBtn"), false); }
+};
+
+function renderFlyers(flyers) {
+  const box = $("genResults"); box.innerHTML = "";
+  flyers.forEach(f => {
+    const q = f.quality;
+    const ok = q && q.approved;
+    const div = document.createElement("div");
+    div.className = "flyer";
+    div.innerHTML = `
+      ${f.image_url ? `<img src="${f.image_url}" alt="${f.platform}">` : `<div style="padding:30px;text-align:center" class="muted">sem imagem</div>`}
+      <div class="meta">
+        <div class="plat">${f.platform}</div>
+        <div class="hl">${f.headline || "—"}</div>
+        <div class="muted">${f.call_to_action || ""}</div>
+        ${q ? `<span class="badge ${ok ? "ok" : "no"}">${ok ? "✓ aprovado" : "✕ revisar"} · ${q.overall?.toFixed?.(1) ?? q.overall}</span>` : ""}
+        <div class="actions">
+          ${f.image_url ? `<a class="btn secondary sm" href="${f.image_url}" download>Baixar</a>` : ""}
+          ${f.image_path ? `<button class="btn sm">Melhorar este</button>` : ""}
+        </div>
+      </div>`;
+    const impBtn = div.querySelector(".actions button");
+    if (impBtn) impBtn.onclick = () => {
+      $("impPath").value = f.image_path; $("impFile").value = ""; setImpDrop(null);
+      goTab("imp"); toast("Caminho preenchido na aba Melhorar");
+    };
+    box.appendChild(div);
+  });
+}
+
+// ================= MARCA / RAG =================
+function showOut(el, data) { el.style.display = "block"; el.textContent = JSON.stringify(data, null, 2); }
+
+$("assetsBtn").onclick = async () => {
+  busy($("assetsBtn"), true, "Carregando…");
+  try { showOut($("assetsOut"), await api(`/api/v1/brands/${brandId()}/assets`)); }
+  catch (e) { toast(e.message, true); } finally { busy($("assetsBtn"), false); }
+};
+$("delBrandBtn").onclick = async () => {
+  if (!confirm(`Apagar TODOS os assets de "${brandId()}"? Isso não pode ser desfeito.`)) return;
+  busy($("delBrandBtn"), true, "Apagando…");
+  try { showOut($("brandOut"), await api(`/api/v1/brands/${brandId()}`, { method: "DELETE" })); toast("Marca apagada"); }
+  catch (e) { toast(e.message, true); } finally { busy($("delBrandBtn"), false); }
+};
+async function uploadMany(inputId, suffix, btn) {
+  const files = $(inputId).files;
+  if (!files.length) return toast("Selecione ao menos um arquivo", true);
+  const fd = new FormData(); [...files].forEach(f => fd.append("files", f));
+  busy(btn, true, "Enviando…");
+  try { showOut($("brandOut"), await api(`/api/v1/brands/${brandId()}/${suffix}`, { method: "POST", body: fd })); toast("Enviado"); }
+  catch (e) { toast(e.message, true); } finally { busy(btn, false); }
+}
+$("docBtn").onclick = () => uploadMany("docFiles", "ingest/docs", $("docBtn"));
+$("imgBtn").onclick = () => uploadMany("imgFiles", "ingest/images", $("imgBtn"));
+$("logoBtn").onclick = async () => {
+  const f = $("logoFile").files[0];
+  if (!f) return toast("Selecione o arquivo do logo", true);
+  const fd = new FormData(); fd.append("file", f);
+  busy($("logoBtn"), true, "Enviando…");
+  try { showOut($("brandOut"), await api(`/api/v1/brands/${brandId()}/logo`, { method: "POST", body: fd })); toast("Logo enviado"); }
+  catch (e) { toast(e.message, true); } finally { busy($("logoBtn"), false); }
+};
+$("logoDelBtn").onclick = async () => {
+  busy($("logoDelBtn"), true, "Removendo…");
+  try { showOut($("brandOut"), await api(`/api/v1/brands/${brandId()}/logo`, { method: "DELETE" })); toast("Logo removido"); }
+  catch (e) { toast(e.message, true); } finally { busy($("logoDelBtn"), false); }
+};
+</script>
+</body>
+</html>

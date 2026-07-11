@@ -2,6 +2,15 @@ from pydantic import BaseModel, Field
 from core.state import Platform, BrandProfile
 
 
+class GenerateContentRequest(BaseModel):
+    """Content flow — turn a brief into structured copy for one platform."""
+    brief: str = Field(..., min_length=10, description="Descrição da campanha")
+    platform: Platform = Field(default=Platform.INSTAGRAM_FEED)
+    brand_name: str = Field(default="Bússola Fiscal")
+    tone: str = Field(default="técnico e confiável")
+    extra_instructions: str = Field(default="", description="Direção extra opcional para a copy.")
+
+
 class GenerateFlyersRequest(BaseModel):
     brief: str = Field(..., min_length=10, description="Descrição da campanha")
     brand: BrandProfile

@@ -194,6 +194,79 @@ def _is_real_fact(metric: str) -> bool:
     return any(m in f.lower() or f.lower() in m for f in PRODUCT_FACTS)
 
 
+def _luminance(rgb: tuple[int, int, int]) -> float:
+    r, g, b = (c / 255 for c in rgb)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def _hex(rgb: tuple[int, int, int]) -> str:
+    return "#{:02X}{:02X}{:02X}".format(*rgb)
+
+
+def _mix(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> tuple[int, int, int]:
+    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))  # type: ignore[return-value]
+
+
+def _palette_from_reference(path: Path) -> dict:
+    """
+    Sample the reference image and build a text palette that matches it, so the
+    composited copy adopts the reference's colors instead of forcing Bússola green.
+
+    Strategy: quantize to a few dominant colors; pick the most saturated/vivid one
+    as the accent (CTA/highlight) and derive readable text/background tones from
+    the overall brightness.
+    """
+    try:
+        with Image.open(path) as im:
+            small = im.convert("RGB").resize((80, 80))
+        pal_img = small.quantize(colors=8, method=Image.Quantize.MEDIANCUT)
+        counts = pal_img.getcolors() or []
+        palette_bytes = pal_img.getpalette() or []
+        colors: list[tuple[int, tuple[int, int, int]]] = []
+        for count, idx in counts:
+            rgb = tuple(palette_bytes[idx * 3: idx * 3 + 3])  # type: ignore[assignment]
+            if len(rgb) == 3:
+                colors.append((count, rgb))  # type: ignore[arg-type]
+        if not colors:
+            return {}
+
+        # Vividness = saturation-ish spread × how far from gray. Pick the punchiest
+        # non-near-white / non-near-black color as the accent.
+        def vividness(rgb: tuple[int, int, int]) -> float:
+            mx, mn = max(rgb), min(rgb)
+            sat = (mx - mn) / max(mx, 1)
+            lum = _luminance(rgb)
+            edge = 1.0 if 0.08 < lum < 0.92 else 0.2
+            return sat * edge
+
+        accent = max(colors, key=lambda c: vividness(c[1]))[1]
+        # Dominant color (by pixel count) drives the background/chip tone.
+        dominant = max(colors, key=lambda c: c[0])[1]
+        dark = _luminance(dominant) < 0.5
+
+        black = (10, 10, 12)
+        white = (255, 255, 255)
+        text = white if dark else (18, 18, 22)
+        secondary = _mix(text, dominant, 0.55)
+
+        # Ensure the highlight/accent reads against the background: if it's too
+        # close in luminance to the dominant tone, push it toward the text color.
+        if abs(_luminance(accent) - _luminance(dominant)) < 0.22:
+            accent = _mix(accent, white if dark else black, 0.55)
+
+        return {
+            "cta_green": _hex(accent),
+            "light_green": _hex(_mix(accent, white, 0.25)),
+            "mid_green": _hex(_mix(accent, black, 0.25)),
+            "secondary_bg": _hex(_mix(dominant, black if dark else white, 0.35)),
+            "white": _hex(text),
+            "light_gray": _hex(secondary),
+            "near_black": _hex(black if _luminance(accent) > 0.55 else white),
+        }
+    except Exception:
+        return {}
+
+
 def generate_from_reference(
     reference_paths: list[str],
     platform_key: str,
@@ -205,15 +278,18 @@ def generate_from_reference(
     trust_items: list[str] | None = None,
     image_prompt: str = "",
     brand_id: str = "",
+    apply_logo: bool = False,
+    match_reference_colors: bool = True,
 ) -> dict:
     """
     Generate a flyer from user-supplied REFERENCE image(s) + copy — the direct
     "GPT Image style" flow.
 
-    The reference images are fed to gpt-image-1's edit endpoint to produce an
-    on-brand BACKGROUND scene that mimics their look; the copy (headline, body,
-    metric chip, CTA, trust line) is then composited by Pillow, followed by the
-    brand logo. No RAG / no agents — everything comes straight from this call.
+    The reference images are fed to gpt-image-1's edit endpoint to produce a
+    BACKGROUND scene that faithfully mimics THEIR look (palette, lighting,
+    composition) — NOT the Bússola brand. The copy (headline, body, metric chip,
+    CTA, trust line) is then composited with colors sampled from the reference so
+    the text matches it too. No RAG / no agents.
 
     Args:
         reference_paths: paths to the uploaded reference image(s) (PNG/JPG/WEBP).
@@ -221,7 +297,11 @@ def generate_from_reference(
         headline, body_copy, badge, metric, call_to_action, trust_items: the copy
             to composite (typically produced by the content flow and edited by the user).
         image_prompt: optional extra direction for the background scene.
-        brand_id: when set, composites the brand logo for this brand.
+        brand_id: which logo to composite (only when apply_logo is True).
+        apply_logo: when True, composite the brand_id logo (off by default so the
+            reference's identity is preserved).
+        match_reference_colors: when True (default), the composited text adopts
+            colors sampled from the reference image instead of the Bússola palette.
 
     Returns:
         dict with image_path (saved PNG) and status.
@@ -242,14 +322,14 @@ def generate_from_reference(
     full_prompt = (
         f"{image_prompt}\n\n" if image_prompt else ""
     ) + (
-        f"Using the provided reference image(s) as the visual style, produce an "
-        f"empty, uncluttered BACKGROUND scene for a {w}x{h}px premium dark-green "
-        f"SaaS/fintech social media flyer that faithfully matches their look "
-        f"(palette, lighting, composition, UI chrome). "
+        f"Recreate the visual style of the provided reference image(s) as an "
+        f"empty, uncluttered BACKGROUND for a {w}x{h}px social media post. "
+        f"Faithfully match THEIR exact color palette, lighting, mood, textures "
+        f"and composition — do not shift the colors toward any other brand. "
         f"Do NOT render any headline, paragraph, button label, badge text, "
-        f"checkmarks or numbers — all text is added later in post-processing. "
-        f"Keep generous clean negative space in the center and bottom for text "
-        f"overlay. High resolution, no watermark, no logo."
+        f"checkmarks, logos or numbers — all text is added later in "
+        f"post-processing. Keep generous clean negative space in the center and "
+        f"bottom for text overlay. High resolution, no watermark."
     )
 
     handles = [open(p, "rb") for p in refs[:_MAX_REFERENCES]]
@@ -267,6 +347,9 @@ def generate_from_reference(
 
     b64 = resp.data[0].b64_json or ""
 
+    palette = _palette_from_reference(refs[0]) if match_reference_colors else None
+    palette_note = "sampled from reference" if palette else "brand default"
+
     copy = {
         "badge": badge,
         "headline": headline,
@@ -275,13 +358,13 @@ def generate_from_reference(
         "call_to_action": call_to_action,
         "trust_items": trust_items or [],
     }
-    b64 = composite_text(b64, platform_key, copy)
+    b64 = composite_text(b64, platform_key, copy, palette=palette)
 
-    if brand_id:
+    if apply_logo and brand_id:
         b64 = composite_logo(b64, brand_id, platform_key)
         logo_note = "logo composited" if find_logo(brand_id) else "no logo found"
     else:
-        logo_note = "no brand_id — logo skipped"
+        logo_note = "logo skipped"
 
     output_dir = os.path.abspath(settings.output_dir)
     os.makedirs(output_dir, exist_ok=True)
@@ -297,6 +380,7 @@ def generate_from_reference(
         "used_references": len(refs),
         "metric_status": metric_note,
         "logo_status": logo_note,
+        "palette_status": palette_note,
         "status": "success",
     }
 

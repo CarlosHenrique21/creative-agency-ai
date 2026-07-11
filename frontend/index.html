@@ -195,6 +195,10 @@
           <input id="iPrompt" placeholder="Ex: mais glow no canto, cards flutuando" />
         </div>
       </div>
+      <div class="platforms">
+        <label class="chk"><input type="checkbox" id="iMatchColors" checked> Usar as cores da imagem de referência</label>
+        <label class="chk"><input type="checkbox" id="iApplyLogo"> Aplicar o logo da marca (brand_id)</label>
+      </div>
 
       <div class="card" style="background:var(--black); margin-top:14px">
         <h2 style="font-size:15px">Conteúdo a compor</h2>
@@ -435,7 +439,9 @@ $("iBtn").onclick = async () => {
   fd.append("call_to_action", $("iCta").value);
   fd.append("trust_items", linesToArr($("iTrust").value).join("|"));
   fd.append("image_prompt", $("iPrompt").value);
-  fd.append("brand_id", brandId());
+  fd.append("match_reference_colors", $("iMatchColors").checked ? "true" : "false");
+  fd.append("apply_logo", $("iApplyLogo").checked ? "true" : "false");
+  if ($("iApplyLogo").checked) fd.append("brand_id", brandId());
   busy($("iBtn"), true, "Gerando imagem…");
   $("iNote").textContent = "A IA está compondo a postagem…";
   try {

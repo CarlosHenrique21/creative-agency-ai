@@ -39,6 +39,7 @@ class GenerateImageResponse(BaseModel):
     used_references: int
     metric_status: str
     logo_status: str
+    palette_status: str = ""
 
 
 class FlyerVariation(BaseModel):

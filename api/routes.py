@@ -146,7 +146,11 @@ async def generate_image_endpoint(
     call_to_action: str = Form(default=""),
     trust_items: str = Form(default="", description="Itens de confiança separados por '|'."),
     image_prompt: str = Form(default="", description="Direção extra opcional para a cena de fundo."),
-    brand_id: str = Form(default="", description="Se informado, aplica o logo desta marca."),
+    brand_id: str = Form(default="", description="Qual logo compor (só quando apply_logo=true)."),
+    apply_logo: bool = Form(default=False, description="Aplicar o logo do brand_id sobre o flyer."),
+    match_reference_colors: bool = Form(
+        default=True, description="Compor o texto com as cores amostradas da imagem de referência."
+    ),
 ) -> GenerateImageResponse:
     """
     Generate a flyer directly from an uploaded reference image + the copy
@@ -177,6 +181,8 @@ async def generate_image_endpoint(
             trust_items=trust,
             image_prompt=image_prompt,
             brand_id=brand_id,
+            apply_logo=apply_logo,
+            match_reference_colors=match_reference_colors,
         )
     except Exception as exc:
         logger.error("image_gen_failed", error=str(exc))
@@ -194,6 +200,7 @@ async def generate_image_endpoint(
         used_references=result["used_references"],
         metric_status=result["metric_status"],
         logo_status=result["logo_status"],
+        palette_status=result.get("palette_status", ""),
     )
 
 

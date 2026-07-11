@@ -30,18 +30,22 @@ logger = structlog.get_logger().bind(component="LogoCompositor")
 _LOGO_DIR = Path("brand_assets/logo")
 _LOGO_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp")
 
-# Logo occupies this fraction of the shorter flyer dimension
-_LOGO_SCALE = 0.32
+# Logo occupies this fraction of the shorter flyer dimension. Kept small and
+# discreet (like the reference images) so it never competes with the headline
+# or collides with the bottom trust line.
+_LOGO_SCALE = 0.15
 # Padding from edges in pixels (at 1080px reference)
 _PADDING_REF = 40
 _REF_SIZE = 1080
 
 Placement = Literal["bottom_right", "bottom_left", "top_center", "left_center", "bottom_center"]
 
+# Placed in corners so the centered/left text column and the bottom trust line
+# stay clear of the logo.
 _PLATFORM_PLACEMENT: dict[str, Placement] = {
-    "instagram_feed": "bottom_center",
+    "instagram_feed": "bottom_right",
     "instagram_story": "top_center",
-    "linkedin_post": "bottom_center",
+    "linkedin_post": "bottom_right",
     "linkedin_banner": "left_center",
 }
 
@@ -73,25 +77,29 @@ def composite_logo(
     brand_id: str,
     platform_key: str,
     logo_scale: float = _LOGO_SCALE,
+    logo_path: Path | str | None = None,
 ) -> str:
     """
-    Paste the brand logo onto the flyer image.
+    Paste a logo onto the flyer image.
 
     Parameters
     ----------
     flyer_b64   : base64-encoded PNG/JPEG of the generated flyer
-    brand_id    : used to locate the correct logo file
+    brand_id    : used to locate a stored logo file when logo_path is not given
     platform_key: e.g. "instagram_feed" — determines logo placement
     logo_scale  : logo width as a fraction of the shorter flyer dimension
+    logo_path   : explicit path to a logo file (e.g. a user upload). When given,
+                  it is used verbatim and brand_id is NOT consulted — so the
+                  direct flow never accidentally picks up another brand's logo.
 
     Returns
     -------
     base64-encoded PNG with logo composited in.
     If no logo file is found the original flyer_b64 is returned unchanged.
     """
-    logo_path = find_logo(brand_id)
-    if logo_path is None:
-        logger.warning("logo_not_found", brand_id=brand_id)
+    logo_path = Path(logo_path) if logo_path else find_logo(brand_id)
+    if logo_path is None or not Path(logo_path).exists():
+        logger.warning("logo_not_found", brand_id=brand_id, logo_path=str(logo_path))
         return flyer_b64
 
     # --- Load flyer ---

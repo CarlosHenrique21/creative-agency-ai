@@ -332,7 +332,12 @@
       </div>
       <div class="choices">
         <label class="chip"><input type="checkbox" id="iMatchColors" checked> Usar as cores da referência</label>
-        <label class="chip"><input type="checkbox" id="iApplyLogo"> Aplicar o logo da marca</label>
+        <label class="chip"><input type="checkbox" id="iApplyLogo"> Aplicar um logo</label>
+      </div>
+      <div id="iLogoRow" style="display:none; margin-top:12px">
+        <label>Logo a aplicar (PNG com transparência recomendado)</label>
+        <input id="iLogoFile" type="file" accept=".png,.jpg,.jpeg,.webp" />
+        <p class="sub" style="margin:6px 0 0">Envie o logo do seu produto — ele será composto no canto do post.</p>
       </div>
 
       <div class="subcard">
@@ -548,6 +553,7 @@ function setImgDrop(file) {
     d.classList.remove("has"); p.style.display = "none";
   }
 }
+$("iApplyLogo").onchange = () => { $("iLogoRow").style.display = $("iApplyLogo").checked ? "block" : "none"; };
 $("imgDrop").onclick = () => $("imgRef").click();
 $("imgRef").onchange = () => setImgDrop($("imgRef").files[0] || null);
 $("imgDrop").ondragover = (e) => { e.preventDefault(); $("imgDrop").classList.add("has"); };
@@ -573,7 +579,11 @@ $("iBtn").onclick = async () => {
   fd.append("image_prompt", $("iPrompt").value);
   fd.append("match_reference_colors", $("iMatchColors").checked ? "true" : "false");
   fd.append("apply_logo", $("iApplyLogo").checked ? "true" : "false");
-  if ($("iApplyLogo").checked) fd.append("brand_id", brandId());
+  if ($("iApplyLogo").checked) {
+    const lf = $("iLogoFile").files[0];
+    if (lf) fd.append("logo", lf);
+    else fd.append("brand_id", brandId());
+  }
   busy($("iBtn"), true, "Gerando imagem…");
   $("iNote").textContent = "A IA está compondo a postagem…";
   try {

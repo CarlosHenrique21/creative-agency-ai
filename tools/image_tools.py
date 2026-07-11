@@ -279,6 +279,7 @@ def generate_from_reference(
     image_prompt: str = "",
     brand_id: str = "",
     apply_logo: bool = False,
+    logo_path: str = "",
     match_reference_colors: bool = True,
 ) -> dict:
     """
@@ -297,11 +298,15 @@ def generate_from_reference(
         headline, body_copy, badge, metric, call_to_action, trust_items: the copy
             to composite (typically produced by the content flow and edited by the user).
         image_prompt: optional extra direction for the background scene.
-        brand_id: which logo to composite (only when apply_logo is True).
-        apply_logo: when True, composite the brand_id logo (off by default so the
-            reference's identity is preserved).
+        brand_id: fallback logo lookup key (only used when apply_logo is True and
+            no explicit logo_path is given).
+        apply_logo: when True, composite a logo (off by default so the reference's
+            identity is preserved).
+        logo_path: explicit path to a logo file supplied by the user (e.g. an
+            uploaded logo). Takes precedence over brand_id so the direct flow never
+            picks up another brand's stored logo.
         match_reference_colors: when True (default), the composited text adopts
-            colors sampled from the reference image instead of the Bússola palette.
+            colors sampled from the reference image.
 
     Returns:
         dict with image_path (saved PNG) and status.
@@ -312,12 +317,10 @@ def generate_from_reference(
 
     w, h, size = _size_for(platform_key)
 
+    # The direct flow follows the user's copy verbatim — no brand-specific
+    # metric gating here (that lives in the Bússola pipeline only).
     metric = (metric or "").strip()
-    if metric and not _is_real_fact(metric):
-        metric = ""
-        metric_note = "metric rejected (not a real product fact)"
-    else:
-        metric_note = "ok"
+    metric_note = "ok"
 
     full_prompt = (
         f"{image_prompt}\n\n" if image_prompt else ""
@@ -348,7 +351,7 @@ def generate_from_reference(
     b64 = resp.data[0].b64_json or ""
 
     palette = _palette_from_reference(refs[0]) if match_reference_colors else None
-    palette_note = "sampled from reference" if palette else "brand default"
+    palette_note = "sampled from reference" if palette else "neutral default"
 
     copy = {
         "badge": badge,
@@ -360,9 +363,15 @@ def generate_from_reference(
     }
     b64 = composite_text(b64, platform_key, copy, palette=palette)
 
-    if apply_logo and brand_id:
-        b64 = composite_logo(b64, brand_id, platform_key)
-        logo_note = "logo composited" if find_logo(brand_id) else "no logo found"
+    # Logo: prefer an explicitly uploaded logo; never fall back to a stored brand
+    # logo unless the caller passed a brand_id AND opted in.
+    resolved_logo = logo_path if (logo_path and Path(logo_path).exists()) else None
+    if apply_logo and (resolved_logo or brand_id):
+        b64 = composite_logo(b64, brand_id, platform_key, logo_path=resolved_logo)
+        if resolved_logo:
+            logo_note = "uploaded logo composited"
+        else:
+            logo_note = "brand logo composited" if find_logo(brand_id) else "no logo found"
     else:
         logo_note = "logo skipped"
 
@@ -386,12 +395,13 @@ def generate_from_reference(
 
 
 _IMPROVE_PROMPT = (
-    "Refine this existing social media flyer into a more polished, premium "
-    "dark-green SaaS/fintech design, matching the look of the provided brand "
-    "reference images. Keep the same layout, message and all existing text "
-    "exactly as-is — do NOT add, remove, translate or alter any text or number. "
-    "Improve composition, lighting, depth, spacing and the dark forest-green "
-    "palette (#052A10 background, #2DA84F accents). No new logo or watermark."
+    "Refine THIS exact image into a cleaner, more polished version of ITSELF. "
+    "Preserve its own identity to the letter: keep the SAME color palette, the "
+    "SAME background, the SAME layout and composition, and ALL existing text and "
+    "numbers exactly as-is — do NOT add, remove, translate or restyle any text, "
+    "do NOT introduce new people, objects, logos, colors or branding. Only "
+    "improve technical quality: sharpen edges, refine lighting, depth, spacing "
+    "and overall polish. No new logo, no watermark."
 )
 
 
@@ -401,14 +411,15 @@ def improve_flyer(
     n_variations: int = 1,
 ) -> dict:
     """
-    Improve an EXISTING flyer image: feed it (plus the brand reference images)
-    to gpt-image-1's edit endpoint to produce refined, on-brand variations.
+    Improve an EXISTING image: feed ONLY that image to gpt-image-1's edit
+    endpoint to produce refined variations that keep its own identity.
 
-    Unlike generate_flyer_image, this does not re-composite text — it polishes a
-    finished flyer while preserving its existing copy.
+    It does not re-composite text and — importantly — does NOT inject any brand
+    reference images, so the result stays faithful to the source instead of
+    drifting toward another brand's look.
 
     Args:
-        image_path: path to the flyer to improve (PNG/JPEG/WEBP).
+        image_path: path to the image to improve (PNG/JPEG/WEBP).
         instructions: optional extra direction (e.g. "more contrast on the CTA").
         n_variations: how many refined variations to produce (1-4).
 
@@ -425,7 +436,9 @@ def improve_flyer(
     prompt = _IMPROVE_PROMPT + (f"\n\nExtra direction: {instructions}" if instructions else "")
     n = max(1, min(int(n_variations), 4))
 
-    handles = [open(src, "rb")] + [open(p, "rb") for p in _reference_images()]
+    # Only the source image — no brand reference images. Feeding the brand refs
+    # was what dragged improved results toward the Bússola green identity.
+    handles = [open(src, "rb")]
     try:
         resp = _client.images.edit(
             model=settings.image_model,
@@ -454,6 +467,6 @@ def improve_flyer(
         "source": str(src),
         "variations": paths,
         "count": len(paths),
-        "used_references": bool(_reference_images()),
+        "used_references": False,
         "status": "success" if paths else "error",
     }

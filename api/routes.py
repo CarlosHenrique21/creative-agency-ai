@@ -146,8 +146,11 @@ async def generate_image_endpoint(
     call_to_action: str = Form(default=""),
     trust_items: str = Form(default="", description="Itens de confiança separados por '|'."),
     image_prompt: str = Form(default="", description="Direção extra opcional para a cena de fundo."),
-    brand_id: str = Form(default="", description="Qual logo compor (só quando apply_logo=true)."),
-    apply_logo: bool = Form(default=False, description="Aplicar o logo do brand_id sobre o flyer."),
+    brand_id: str = Form(default="", description="Fallback de logo (só quando apply_logo=true e sem upload)."),
+    apply_logo: bool = Form(default=False, description="Aplicar um logo sobre o flyer."),
+    logo: UploadFile | None = File(
+        default=None, description="Logo enviado pelo usuário (PNG recomendado). Usado quando apply_logo=true."
+    ),
     match_reference_colors: bool = Form(
         default=True, description="Compor o texto com as cores amostradas da imagem de referência."
     ),
@@ -166,9 +169,19 @@ async def generate_image_endpoint(
     with open(ref_path, "wb") as f:
         f.write(await reference.read())
 
+    # Save an uploaded logo, if any, so it (not a stored brand logo) is used.
+    logo_path = ""
+    if logo is not None and logo.filename:
+        lext = Path(logo.filename).suffix.lower()
+        if lext not in _ALLOWED_UPLOAD_EXT:
+            raise HTTPException(status_code=400, detail=f"Logo em formato não suportado: {lext or 'desconhecido'}")
+        logo_path = os.path.join(output_dir, f"logo_{uuid.uuid4().hex[:8]}{lext}")
+        with open(logo_path, "wb") as f:
+            f.write(await logo.read())
+
     trust = [t.strip() for t in trust_items.split("|") if t.strip()]
 
-    logger.info("image_gen_started", platform=platform, reference=ref_path)
+    logger.info("image_gen_started", platform=platform, reference=ref_path, has_logo=bool(logo_path))
     try:
         result = generate_from_reference(
             reference_paths=[ref_path],
@@ -182,6 +195,7 @@ async def generate_image_endpoint(
             image_prompt=image_prompt,
             brand_id=brand_id,
             apply_logo=apply_logo,
+            logo_path=logo_path,
             match_reference_colors=match_reference_colors,
         )
     except Exception as exc:

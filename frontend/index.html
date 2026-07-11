@@ -4,8 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Mirror Studio — Crie imagens para o seu produto</title>
-<!-- Favicon: minimalist "mirror" mark — a solid half and its reflected outline. -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='6' width='23' height='52' rx='9' fill='%230071E3'/%3E%3Crect x='35' y='6' width='23' height='52' rx='9' fill='none' stroke='%230071E3' stroke-width='4' stroke-opacity='0.55'/%3E%3C/svg%3E" />
+<!-- Favicon: minimalist "mirror" mark — a solid half-disc and its mirrored outline.
+     Inlined as a data-URI (the SPA is served from a single route, so frontend/ files
+     aren't reachable by path). Source vectors also live in frontend/logo.svg + favicon.svg. -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96' fill='none'%3E%3Cpath d='M44 14 A34 34 0 0 0 44 82 Z' fill='%230071E3'/%3E%3Cpath d='M52 14 A34 34 0 0 1 52 82 Z' fill='none' stroke='%230071E3' stroke-width='7' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <style>
   /* ============================================================
      Design system — minimalist, Apple-inspired, brand-neutral.
@@ -60,8 +62,9 @@
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 1px solid var(--line);
   }
-  .brandmark { font-weight: 400; font-size: 19px; letter-spacing: -.02em; color: var(--ink-2); }
+  .brandmark { display: flex; align-items: center; gap: 9px; font-weight: 400; font-size: 19px; letter-spacing: -.02em; color: var(--ink-2); }
   .brandmark b { font-weight: 600; color: var(--ink); }
+  .brandmark svg { width: 22px; height: 22px; display: block; }
   .spacer { flex: 1; }
   .brandfield { display: flex; align-items: center; gap: 8px; }
   .brandfield label { font-size: 12px; color: var(--ink-2); margin: 0; }
@@ -228,7 +231,13 @@
 </head>
 <body>
 <header>
-  <div class="brandmark"><b>Mirror</b> Studio</div>
+  <div class="brandmark">
+    <svg viewBox="0 0 96 96" fill="none" aria-hidden="true">
+      <path d="M45 12 A36 36 0 0 0 45 84 Z" fill="var(--accent)"/>
+      <path d="M51 12 A36 36 0 0 1 51 84 Z" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linejoin="round"/>
+    </svg>
+    <span><b>Mirror</b> Studio</span>
+  </div>
   <div class="spacer"></div>
   <div class="brandfield">
     <label>Marca</label>

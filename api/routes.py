@@ -62,11 +62,16 @@ async def improve_flyer_endpoint(
     ),
     instructions: str = Form(default="", description="Direção extra (ex: 'mais contraste no CTA')."),
     n_variations: int = Form(default=1, ge=1, le=4, description="Quantas variações gerar (1-4)."),
+    extra_image: UploadFile | None = File(
+        default=None,
+        description="Segunda imagem para MESCLAR na base (ex: foto de uma modelo). Opcional.",
+    ),
 ) -> ImproveFlyerResponse:
     """
     Melhora um flyer existente: refina a arte mantendo o texto, gerando variações
-    on-brand via gpt-image-1. Aceita upload de imagem OU o caminho de um flyer já
-    produzido pela rota /flyers/generate.
+    via gpt-image-1. Aceita upload de imagem OU o caminho de um flyer já produzido.
+    Quando `extra_image` é enviada, o sujeito dela (ex: uma modelo) é integrado à
+    imagem base preservando a paleta, o layout e o texto.
     """
     output_dir = os.path.abspath(settings.output_dir)
     os.makedirs(output_dir, exist_ok=True)
@@ -88,9 +93,22 @@ async def improve_flyer_endpoint(
     else:
         raise HTTPException(status_code=400, detail="Envie um arquivo (file) ou um image_path.")
 
-    logger.info("improve_started", source=src_path, n_variations=n_variations)
+    # Optional second image to merge into the base.
+    extra_path = ""
+    if extra_image is not None and extra_image.filename:
+        eext = Path(extra_image.filename).suffix.lower()
+        if eext not in _ALLOWED_UPLOAD_EXT:
+            raise HTTPException(status_code=400, detail=f"Imagem extra em formato não suportado: {eext or 'desconhecido'}")
+        extra_path = os.path.join(output_dir, f"merge_{uuid.uuid4().hex[:8]}{eext}")
+        with open(extra_path, "wb") as f:
+            f.write(await extra_image.read())
+
+    logger.info("improve_started", source=src_path, n_variations=n_variations, merge=bool(extra_path))
     try:
-        result = improve_flyer(src_path, instructions=instructions, n_variations=n_variations)
+        result = improve_flyer(
+            src_path, instructions=instructions, n_variations=n_variations,
+            extra_image_path=extra_path,
+        )
     except Exception as exc:
         logger.error("improve_failed", source=src_path, error=str(exc))
         raise HTTPException(status_code=500, detail=f"Improve failed: {exc}") from exc

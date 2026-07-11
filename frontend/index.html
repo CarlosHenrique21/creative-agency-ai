@@ -376,13 +376,22 @@
       <div class="row">
         <div>
           <label>Instruções extras</label>
-          <input id="impInstr" placeholder="Ex: mais contraste no CTA, fundo com mais profundidade" />
+          <input id="impInstr" placeholder="Ex: coloque a modelo à direita, mais contraste no CTA" />
         </div>
         <div style="max-width:140px">
           <label>Variações</label>
           <input id="impN" type="number" min="1" max="4" value="2" />
         </div>
       </div>
+
+      <div class="subcard">
+        <h3>Mesclar outra imagem (opcional)</h3>
+        <p class="sub">Envie uma segunda imagem — ex: a foto de uma modelo ou produto — e a IA a integra na imagem base, mantendo a paleta, o layout e o texto.</p>
+        <div class="drop" id="mergeDrop" style="padding:20px">Clique ou arraste a imagem a mesclar · PNG, JPG ou WEBP</div>
+        <input id="mergeFile" type="file" accept=".png,.jpg,.jpeg,.webp" style="display:none" />
+        <img id="mergePreview" class="preview" alt="imagem a mesclar" />
+      </div>
+
       <button class="btn" id="impBtn">Melhorar</button>
     </div>
     <div id="impResults" class="grid"></div>
@@ -623,6 +632,28 @@ $("impDrop").ondrop = (e) => {
   e.preventDefault(); const f = e.dataTransfer.files[0];
   if (f) { $("impFile").files = e.dataTransfer.files; setImpDrop(f); $("impPath").value = ""; }
 };
+
+// ---- optional merge image ----
+let mergeFile = null;
+function setMergeDrop(file) {
+  const d = $("mergeDrop"), p = $("mergePreview");
+  mergeFile = file || null;
+  if (file) {
+    d.textContent = "✓ " + file.name; d.classList.add("has");
+    p.src = URL.createObjectURL(file); p.style.display = "block";
+  } else {
+    d.textContent = "Clique ou arraste a imagem a mesclar · PNG, JPG ou WEBP";
+    d.classList.remove("has"); p.style.display = "none";
+  }
+}
+$("mergeDrop").onclick = () => $("mergeFile").click();
+$("mergeFile").onchange = () => setMergeDrop($("mergeFile").files[0] || null);
+$("mergeDrop").ondragover = (e) => { e.preventDefault(); $("mergeDrop").classList.add("has"); };
+$("mergeDrop").ondrop = (e) => {
+  e.preventDefault(); const f = e.dataTransfer.files[0];
+  if (f) { $("mergeFile").files = e.dataTransfer.files; setMergeDrop(f); }
+};
+
 $("impBtn").onclick = async () => {
   const file = $("impFile").files[0];
   const path = $("impPath").value.trim();
@@ -632,6 +663,7 @@ $("impBtn").onclick = async () => {
   if (path) fd.append("image_path", path);
   fd.append("instructions", $("impInstr").value);
   fd.append("n_variations", $("impN").value || "1");
+  if (mergeFile) fd.append("extra_image", mergeFile);
   busy($("impBtn"), true, "Melhorando…");
   try {
     const data = await api("/api/v1/flyers/improve", { method: "POST", body: fd });

@@ -38,14 +38,19 @@ _LOGO_SCALE = 0.15
 _PADDING_REF = 40
 _REF_SIZE = 1080
 
-Placement = Literal["bottom_right", "bottom_left", "top_center", "left_center", "bottom_center"]
+Placement = Literal[
+    "bottom_right", "bottom_left", "top_center", "top_right", "top_left",
+    "left_center", "bottom_center",
+]
 
-# Placed in corners so the centered/left text column and the bottom trust line
-# stay clear of the logo.
+# The composited copy occupies the top-center (badge), the vertical center
+# (headline/body/metric/CTA) and a full-width trust line pinned near the bottom.
+# The logo therefore goes to a TOP corner on square/portrait formats so it never
+# collides with the bottom trust line; wide banners keep it on the left anchor.
 _PLATFORM_PLACEMENT: dict[str, Placement] = {
-    "instagram_feed": "bottom_right",
-    "instagram_story": "top_center",
-    "linkedin_post": "bottom_right",
+    "instagram_feed": "top_right",
+    "instagram_story": "top_right",
+    "linkedin_post": "top_right",
     "linkedin_banner": "left_center",
 }
 
@@ -157,6 +162,8 @@ def _compute_position(
         "bottom_left":  (padding, fh - lh - padding),
         "bottom_center": ((fw - lw) // 2, fh - lh - padding),
         "top_center":   ((fw - lw) // 2, padding),
+        "top_right":    (fw - lw - padding, padding),
+        "top_left":     (padding, padding),
         "left_center":  (padding, (fh - lh) // 2),
     }
     return positions[placement]

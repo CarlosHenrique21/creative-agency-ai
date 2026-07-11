@@ -405,23 +405,40 @@ _IMPROVE_PROMPT = (
 )
 
 
+_MERGE_PROMPT = (
+    "Take the FIRST image as the base design and keep its palette, layout, "
+    "background and ALL its existing text and numbers exactly as-is. Then "
+    "seamlessly integrate the subject from the SECOND image (e.g. a person/model "
+    "or product) into the base, matching its lighting, color grade, perspective "
+    "and style so it looks native to the design. Place the added subject where it "
+    "does not cover the headline, CTA or trust line — typically to one side, "
+    "filling empty negative space. Do NOT alter, translate or restyle the "
+    "existing text; do NOT change the base colors or branding; no new watermark."
+)
+
+
 def improve_flyer(
     image_path: str,
     instructions: str = "",
     n_variations: int = 1,
+    extra_image_path: str = "",
 ) -> dict:
     """
-    Improve an EXISTING image: feed ONLY that image to gpt-image-1's edit
-    endpoint to produce refined variations that keep its own identity.
+    Improve an EXISTING image with gpt-image-1's edit endpoint.
 
-    It does not re-composite text and — importantly — does NOT inject any brand
-    reference images, so the result stays faithful to the source instead of
-    drifting toward another brand's look.
+    Two modes:
+      * Polish (default): feed ONLY the source image to refine it while keeping
+        its own identity — no brand reference images, so it never drifts toward
+        another brand's look.
+      * Merge: when extra_image_path is given, feed the source PLUS that second
+        image and integrate its subject (e.g. a model photo) into the base
+        design, preserving the base's palette, layout and text.
 
     Args:
-        image_path: path to the image to improve (PNG/JPEG/WEBP).
-        instructions: optional extra direction (e.g. "more contrast on the CTA").
-        n_variations: how many refined variations to produce (1-4).
+        image_path: path to the base image to improve (PNG/JPEG/WEBP).
+        instructions: optional extra direction (e.g. "put the model on the right").
+        n_variations: how many variations to produce (1-4).
+        extra_image_path: optional second image to merge into the base.
 
     Returns:
         dict with the list of saved variation paths and a status message.
@@ -430,15 +447,22 @@ def improve_flyer(
     if not src.exists():
         return {"error": f"image not found: {image_path}", "status": "error"}
 
+    extra = Path(extra_image_path) if extra_image_path else None
+    if extra is not None and not extra.exists():
+        return {"error": f"extra image not found: {extra_image_path}", "status": "error"}
+
     with Image.open(src) as im:
         size = _size_from_ratio(im.width / im.height)
 
-    prompt = _IMPROVE_PROMPT + (f"\n\nExtra direction: {instructions}" if instructions else "")
+    base_prompt = _MERGE_PROMPT if extra is not None else _IMPROVE_PROMPT
+    prompt = base_prompt + (f"\n\nExtra direction: {instructions}" if instructions else "")
     n = max(1, min(int(n_variations), 4))
 
-    # Only the source image — no brand reference images. Feeding the brand refs
-    # was what dragged improved results toward the Bússola green identity.
+    # Source first (the base). When merging, the second image is the subject to
+    # integrate. No brand reference images are ever injected here.
     handles = [open(src, "rb")]
+    if extra is not None:
+        handles.append(open(extra, "rb"))
     try:
         resp = _client.images.edit(
             model=settings.image_model,
@@ -468,5 +492,6 @@ def improve_flyer(
         "variations": paths,
         "count": len(paths),
         "used_references": False,
+        "merged": extra is not None,
         "status": "success" if paths else "error",
     }

@@ -3,137 +3,261 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bússola Fiscal — Studio de Flyers</title>
+<title>Studio — Crie imagens para o seu produto</title>
 <style>
+  /* ============================================================
+     Design system — minimalist, Apple-inspired, brand-neutral.
+     Gestalt: neutral figure/ground, generous whitespace (proximity),
+     one accent color, uniform control treatment (similarity),
+     cards as common regions, a single vertical rhythm (continuity).
+     ============================================================ */
   :root {
-    --bg: #052A10; --bg2: #0B4A1E; --mid: #1A7A3A; --cta: #2DA84F;
-    --light: #4DC76A; --gold: #C8931A; --white: #FFFFFF; --gray: #E8EDEA;
-    --muted: #5C7063; --black: #0A1A0D; --radius: 14px;
+    color-scheme: light dark;
+    --bg: #FBFBFD;          /* page — near-white, low glare */
+    --surface: #FFFFFF;     /* elevated cards (figure) */
+    --surface-2: #F5F5F7;   /* subtle fills, inputs */
+    --line: #E3E3E6;        /* hairline separators */
+    --line-strong: #D2D2D7;
+    --ink: #1D1D1F;         /* primary text — not pure black */
+    --ink-2: #6E6E73;       /* secondary text */
+    --ink-3: #9A9AA0;       /* tertiary / placeholder */
+    --accent: #0071E3;      /* single accent — Apple blue */
+    --accent-press: #0060C0;
+    --danger: #D8362E;
+    --radius: 18px;
+    --radius-sm: 12px;
+    --radius-pill: 980px;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 30px rgba(0,0,0,.06);
+    --ease: cubic-bezier(.4, 0, .2, 1);
+    --font: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000; --surface: #1C1C1E; --surface-2: #2C2C2E;
+      --line: #38383A; --line-strong: #48484A;
+      --ink: #F5F5F7; --ink-2: #AEAEB2; --ink-3: #8E8E93;
+      --accent: #2997FF; --accent-press: #0071E3;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 40px rgba(0,0,0,.5);
+    }
   }
   * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
   body {
-    margin: 0; background: radial-gradient(circle at 50% 0%, #0B4A1E 0%, #052A10 60%, #0A1A0D 100%);
-    color: var(--gray); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    min-height: 100vh;
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--font); font-size: 16px; line-height: 1.5;
+    letter-spacing: -.01em; min-height: 100vh;
   }
+
+  /* ---- Top bar (thin, translucent, Apple-like) ---- */
   header {
-    display: flex; align-items: center; gap: 16px; padding: 18px 28px;
-    border-bottom: 1px solid var(--bg2); position: sticky; top: 0;
-    background: rgba(5,42,16,.85); backdrop-filter: blur(8px); z-index: 10; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: 18px;
+    height: 52px; padding: 0 22px;
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--line);
   }
-  .logo { font-weight: 800; font-size: 20px; color: var(--white); letter-spacing: -.3px; }
-  .logo span { color: var(--cta); }
-  .grow { flex: 1; }
-  .health { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
-  .dot.ok { background: var(--cta); box-shadow: 0 0 8px var(--cta); }
-  .dot.bad { background: #FF5F57; }
-  label { display: block; font-size: 13px; color: var(--gray); margin: 12px 0 5px; font-weight: 600; }
-  input, textarea, select {
-    width: 100%; background: var(--black); border: 1px solid var(--mid); color: var(--white);
-    padding: 10px 12px; border-radius: 10px; font-size: 14px; font-family: inherit;
+  .brandmark { font-weight: 600; font-size: 19px; letter-spacing: -.02em; color: var(--ink); }
+  .brandmark b { font-weight: 600; }
+  .spacer { flex: 1; }
+  .brandfield { display: flex; align-items: center; gap: 8px; }
+  .brandfield label { font-size: 12px; color: var(--ink-2); margin: 0; }
+  .brandfield input {
+    width: 150px; height: 30px; padding: 0 10px; font-size: 13px;
+    background: var(--surface-2); border: 1px solid transparent; border-radius: 8px; color: var(--ink);
   }
-  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--cta); }
-  textarea { resize: vertical; min-height: 70px; }
-  .brandbar { display: flex; align-items: center; gap: 10px; }
-  .brandbar label { margin: 0; white-space: nowrap; }
-  .brandbar input { width: 220px; }
-  main { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
-  .tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .health { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); transition: background .3s; }
+  .dot.ok { background: #34C759; }
+  .dot.bad { background: var(--danger); }
+
+  /* ---- Hero ---- */
+  .hero { text-align: center; padding: 64px 20px 28px; }
+  .hero h1 {
+    margin: 0 0 12px; font-size: clamp(34px, 6vw, 56px); font-weight: 600;
+    letter-spacing: -.03em; line-height: 1.05;
+  }
+  .hero p { margin: 0 auto; max-width: 560px; font-size: clamp(17px, 2.4vw, 21px); color: var(--ink-2); }
+
+  main { max-width: 940px; margin: 0 auto; padding: 8px 20px 100px; }
+
+  /* ---- Segmented tabs (pill, similarity) ---- */
+  .tabs {
+    display: inline-flex; gap: 2px; padding: 4px; margin: 0 auto 34px;
+    background: var(--surface-2); border-radius: var(--radius-pill);
+  }
+  .tabs-wrap { display: flex; justify-content: center; }
   .tab {
-    padding: 10px 18px; border-radius: 999px; border: 1px solid var(--mid);
-    background: transparent; color: var(--gray); cursor: pointer; font-size: 14px; font-weight: 600;
+    appearance: none; border: none; cursor: pointer;
+    padding: 9px 18px; border-radius: var(--radius-pill);
+    font-family: inherit; font-size: 14px; font-weight: 500; color: var(--ink-2);
+    background: transparent; transition: all .25s var(--ease); white-space: nowrap;
   }
-  .tab.active { background: var(--cta); color: var(--black); border-color: var(--cta); }
-  .panel { display: none; }
+  .tab:hover { color: var(--ink); }
+  .tab.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+
+  .panel { display: none; animation: fade .4s var(--ease); }
   .panel.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ---- Cards (common region) ---- */
   .card {
-    background: var(--bg2); border: 1px solid var(--mid); border-radius: var(--radius);
-    padding: 20px; margin-bottom: 18px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 28px; margin-bottom: 20px;
+    box-shadow: var(--shadow);
   }
-  .card h2 { margin: 0 0 4px; color: var(--white); font-size: 17px; }
-  .card .hint { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
-  .step { display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center;
-    background: var(--cta); color: var(--black); border-radius: 50%; font-weight: 800; font-size: 12px; margin-right: 8px; }
-  .row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .card > h2 {
+    margin: 0 0 4px; font-size: 22px; font-weight: 600; letter-spacing: -.02em;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .card .sub { margin: 0 0 20px; color: var(--ink-2); font-size: 15px; }
+  .step {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-size: 13px; font-weight: 600; flex: none;
+  }
+  .subcard {
+    background: var(--surface-2); border-radius: var(--radius-sm);
+    padding: 20px; margin-top: 18px;
+  }
+  .subcard h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+  .subcard .sub { margin: 0 0 14px; font-size: 13px; }
+
+  /* ---- Fields (uniform treatment = similarity) ---- */
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--ink-2); margin: 14px 0 6px; }
+  input, textarea, select {
+    width: 100%; font-family: inherit; font-size: 15px; color: var(--ink);
+    background: var(--surface-2); border: 1px solid transparent; border-radius: var(--radius-sm);
+    padding: 11px 13px; transition: border-color .2s var(--ease), background .2s var(--ease);
+  }
+  @media (prefers-color-scheme: light) { input, textarea, select { background: #fff; border-color: var(--line-strong); } }
+  input::placeholder, textarea::placeholder { color: var(--ink-3); }
+  input:focus, textarea:focus, select:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  textarea { resize: vertical; min-height: 76px; line-height: 1.5; }
+  select { appearance: none; background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-2) 50%),
+    linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+    background-position: calc(100% - 18px) 52%, calc(100% - 13px) 52%;
+    background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 34px; }
+
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
   .row > div { flex: 1; min-width: 150px; }
+
+  /* ---- Buttons ---- */
   .btn {
-    background: var(--cta); color: var(--black); border: none; padding: 11px 22px;
-    border-radius: 999px; font-weight: 700; cursor: pointer; font-size: 14px; margin-top: 16px;
+    appearance: none; border: none; cursor: pointer; font-family: inherit;
+    font-size: 15px; font-weight: 500; letter-spacing: -.01em;
+    background: var(--accent); color: #fff;
+    padding: 12px 24px; border-radius: var(--radius-pill); margin-top: 22px;
+    transition: background .2s var(--ease), transform .08s var(--ease), opacity .2s;
   }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .btn.secondary { background: transparent; color: var(--light); border: 1px solid var(--mid); }
-  .btn.danger { background: transparent; color: #FF8A80; border: 1px solid #7a2a26; }
-  .btn.sm { padding: 6px 14px; font-size: 12px; margin-top: 0; }
-  .platforms { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
-  .chk {
-    display: flex; align-items: center; gap: 7px; background: var(--black); border: 1px solid var(--mid);
-    padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; user-select: none;
+  .btn:hover { background: var(--accent-press); }
+  .btn:active { transform: scale(.98); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.ghost { background: var(--surface-2); color: var(--ink); }
+  .btn.ghost:hover { background: var(--line); }
+  .btn.danger { background: transparent; color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent); }
+  .btn.danger:hover { background: color-mix(in srgb, var(--danger) 8%, transparent); }
+  .btn.sm { padding: 8px 16px; font-size: 13px; margin-top: 0; }
+  .note { margin-left: 14px; font-size: 13px; color: var(--ink-2); }
+
+  /* ---- Toggle chips (checkboxes) ---- */
+  .choices { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;
+    padding: 9px 15px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 500;
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2);
+    transition: all .2s var(--ease);
   }
-  .chk input { width: auto; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-  .flyer { background: var(--black); border: 1px solid var(--mid); border-radius: var(--radius); overflow: hidden; }
-  .flyer img { width: 100%; display: block; background: #021; }
-  .flyer .meta { padding: 12px; }
-  .flyer .plat { font-size: 11px; color: var(--light); text-transform: uppercase; letter-spacing: 1px; }
-  .flyer .hl { color: var(--white); font-weight: 700; margin: 4px 0; font-size: 14px; }
-  .badge { display: inline-block; font-size: 11px; padding: 3px 9px; border-radius: 999px; margin-top: 6px; }
-  .badge.ok { background: rgba(45,168,79,.2); color: var(--light); border: 1px solid var(--cta); }
-  .badge.no { background: rgba(255,95,87,.15); color: #FF8A80; border: 1px solid #7a2a26; }
-  .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .chip:has(input:checked) { background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: var(--accent); color: var(--accent); }
+  .chip input { width: auto; margin: 0; accent-color: var(--accent); }
+
+  /* ---- Dropzone ---- */
   .drop {
-    border: 2px dashed var(--mid); border-radius: 12px; padding: 22px; text-align: center;
-    color: var(--muted); cursor: pointer; font-size: 13px;
+    border: 1.5px dashed var(--line-strong); border-radius: var(--radius-sm);
+    padding: 32px 20px; text-align: center; color: var(--ink-2); font-size: 14px;
+    cursor: pointer; transition: all .2s var(--ease); background: var(--surface-2);
   }
-  .drop.has { border-color: var(--cta); color: var(--light); }
-  .preview { margin-top: 12px; max-height: 200px; border-radius: 10px; display: none; }
+  .drop:hover { border-color: var(--accent); color: var(--ink); }
+  .drop.has { border-color: var(--accent); border-style: solid; color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .preview { display: none; margin-top: 14px; max-height: 220px; border-radius: var(--radius-sm); border: 1px solid var(--line); }
+
+  /* ---- Result grid (similarity of tiles) ---- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; margin-top: 4px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .tile img { width: 100%; display: block; background: var(--surface-2); }
+  .tile .meta { padding: 14px 16px; }
+  .tile .plat { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+  .tile .hl { margin: 3px 0 8px; font-size: 14px; font-weight: 600; }
+  .tag { display: inline-block; font-size: 11px; padding: 3px 9px; border-radius: var(--radius-pill); }
+  .tag.ok { background: color-mix(in srgb, #34C759 16%, transparent); color: #1a8a3c; }
+  .tag.no { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
+  .tile .acts { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
   pre.out {
-    background: var(--black); border: 1px solid var(--mid); border-radius: 10px; padding: 12px;
-    font-size: 12px; color: var(--gray); overflow: auto; max-height: 260px; white-space: pre-wrap;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: 14px; font-size: 12px; line-height: 1.5; color: var(--ink-2);
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    overflow: auto; max-height: 280px; white-space: pre-wrap; margin-top: 16px;
   }
+
+  /* ---- Toast ---- */
   .toast {
-    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
-    background: var(--bg2); border: 1px solid var(--cta); color: var(--white);
-    padding: 12px 20px; border-radius: 10px; font-size: 14px; opacity: 0; transition: opacity .3s;
-    pointer-events: none; z-index: 50; max-width: 90%;
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(10px);
+    background: color-mix(in srgb, var(--ink) 92%, transparent); color: var(--bg);
+    padding: 13px 22px; border-radius: var(--radius-pill); font-size: 14px; font-weight: 500;
+    opacity: 0; transition: all .3s var(--ease); pointer-events: none; z-index: 50; max-width: 90%;
+    box-shadow: var(--shadow);
   }
-  .toast.show { opacity: 1; }
-  .toast.err { border-color: #FF5F57; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.err { background: var(--danger); color: #fff; }
+
   .spinner {
-    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: var(--white);
-    border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; vertical-align: -3px;
+    width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+    border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; vertical-align: -2px; margin-right: 6px;
   }
+  .btn.ghost .spinner { border-color: color-mix(in srgb, var(--ink) 30%, transparent); border-top-color: var(--ink); }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .muted { color: var(--muted); font-size: 13px; }
 </style>
 </head>
 <body>
 <header>
-  <div class="logo">Bússola<span>Fiscal</span> · Studio</div>
-  <div class="brandbar">
-    <label>brand_id</label>
-    <input id="brandId" value="bussola" placeholder="ex: bussola" />
+  <div class="brandmark"><b>Studio</b></div>
+  <div class="spacer"></div>
+  <div class="brandfield">
+    <label>Marca</label>
+    <input id="brandId" value="default" placeholder="ex: minha-marca" />
   </div>
-  <div class="grow"></div>
   <div class="health"><span id="healthDot" class="dot"></span><span id="healthTxt">verificando…</span></div>
 </header>
 
+<section class="hero">
+  <h1>Crie imagens para o seu produto.</h1>
+  <p>Escreva o conteúdo, envie uma referência e gere posts que seguem exatamente o seu estilo.</p>
+</section>
+
 <main>
-  <div class="tabs">
-    <button class="tab active" data-tab="content">1️⃣ Conteúdo</button>
-    <button class="tab" data-tab="image">2️⃣ Imagem</button>
-    <button class="tab" data-tab="imp">✨ Melhorar</button>
-    <button class="tab" data-tab="advanced">⚙️ Avançado</button>
-    <button class="tab" data-tab="brand">🏷️ Marca & Assets</button>
+  <div class="tabs-wrap">
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="content">Conteúdo</button>
+      <button class="tab" data-tab="image">Imagem</button>
+      <button class="tab" data-tab="imp">Melhorar</button>
+      <button class="tab" data-tab="advanced">Avançado</button>
+      <button class="tab" data-tab="brand">Marca</button>
+    </div>
   </div>
 
   <!-- ============ 1. CONTEÚDO ============ -->
   <section class="panel active" id="content">
     <div class="card">
-      <h2><span class="step">1</span>Gerar o conteúdo (copy)</h2>
-      <p class="hint">Descreva a campanha e a IA escreve os textos da postagem. Você revisa e edita antes de gerar a imagem.</p>
+      <h2><span class="step">1</span>Escreva o conteúdo</h2>
+      <p class="sub">Descreva a campanha e a IA cria os textos da postagem. Você revisa e edita antes de gerar a imagem.</p>
       <label>Brief da campanha</label>
-      <textarea id="cBrief" placeholder="Ex: Lançamento da classificação NCM por IA para importadores...">Campanha para apresentar a classificação fiscal NCM por IA da Bússola Fiscal a importadores e despachantes.</textarea>
+      <textarea id="cBrief" placeholder="Ex: Lançamento do meu novo produto para um público jovem, com foco em praticidade e design.">Lançamento de um novo produto com foco em praticidade, design e confiança para o público certo.</textarea>
       <div class="row">
         <div>
           <label>Plataforma</label>
@@ -144,8 +268,8 @@
             <option value="linkedin_banner">LinkedIn Banner (1584×396)</option>
           </select>
         </div>
-        <div><label>Nome da marca</label><input id="cBrand" value="Bússola Fiscal" /></div>
-        <div><label>Tom de voz</label><input id="cTone" value="técnico e confiável" /></div>
+        <div><label>Nome da marca / produto</label><input id="cBrand" value="Meu Produto" /></div>
+        <div><label>Tom de voz</label><input id="cTone" value="claro e confiável" /></div>
       </div>
       <label>Direção extra (opcional)</label>
       <input id="cExtra" placeholder="Ex: enfatizar economia de tempo, tom mais urgente" />
@@ -153,8 +277,8 @@
     </div>
 
     <div class="card" id="cResultCard" style="display:none">
-      <h2>Conteúdo gerado — edite à vontade</h2>
-      <p class="hint">Esses textos serão compostos sobre a imagem. Use **asteriscos duplos** na headline para destacar palavras em verde.</p>
+      <h2>Conteúdo gerado</h2>
+      <p class="sub">Esses textos serão compostos sobre a imagem. Use **asteriscos duplos** na headline para destacar palavras.</p>
       <div class="row">
         <div><label>Headline</label><input id="fHeadline" /></div>
         <div><label>Subheadline</label><input id="fSub" /></div>
@@ -162,25 +286,25 @@
       <label>Body copy</label>
       <textarea id="fBody"></textarea>
       <div class="row">
-        <div><label>Badge (selo)</label><input id="fBadge" placeholder="ex: PLATAFORMA" /></div>
-        <div><label>Métrica (fato real)</label><input id="fMetric" placeholder="ex: 131 regras NCM" /></div>
+        <div><label>Badge (selo)</label><input id="fBadge" placeholder="ex: NOVO" /></div>
+        <div><label>Métrica / destaque</label><input id="fMetric" placeholder="ex: 30% mais rápido" /></div>
         <div><label>CTA</label><input id="fCta" /></div>
       </div>
       <label>Itens de confiança (um por linha)</label>
-      <textarea id="fTrust" placeholder="LGPD compliant&#10;Dados criptografados"></textarea>
-      <button class="btn" id="cToImage">Usar este conteúdo → ir para Imagem</button>
+      <textarea id="fTrust" placeholder="Entrega rápida&#10;Garantia de 1 ano"></textarea>
+      <button class="btn" id="cToImage">Usar este conteúdo → Imagem</button>
     </div>
   </section>
 
   <!-- ============ 2. IMAGEM ============ -->
   <section class="panel" id="image">
     <div class="card">
-      <h2><span class="step">2</span>Gerar a imagem</h2>
-      <p class="hint">Envie uma imagem de referência (estilo/layout desejado). A IA absorve o visual dela + o conteúdo abaixo e cria a postagem final.</p>
-      <div class="drop" id="imgDrop">📁 Clique ou arraste a imagem de referência (PNG/JPG/WEBP)</div>
+      <h2><span class="step">2</span>Gere a imagem</h2>
+      <p class="sub">Envie uma imagem de referência com o estilo desejado. A IA absorve o visual dela + o conteúdo abaixo e cria a postagem final, seguindo as cores da sua referência.</p>
+      <div class="drop" id="imgDrop">Clique ou arraste a imagem de referência · PNG, JPG ou WEBP</div>
       <input id="imgRef" type="file" accept=".png,.jpg,.jpeg,.webp" style="display:none" />
       <img id="imgRefPreview" class="preview" alt="referência" />
-      <div class="row">
+      <div class="row" style="margin-top:6px">
         <div>
           <label>Plataforma</label>
           <select id="iPlatform">
@@ -192,17 +316,17 @@
         </div>
         <div>
           <label>Direção extra da cena (opcional)</label>
-          <input id="iPrompt" placeholder="Ex: mais glow no canto, cards flutuando" />
+          <input id="iPrompt" placeholder="Ex: mais luz no canto, elementos flutuando" />
         </div>
       </div>
-      <div class="platforms">
-        <label class="chk"><input type="checkbox" id="iMatchColors" checked> Usar as cores da imagem de referência</label>
-        <label class="chk"><input type="checkbox" id="iApplyLogo"> Aplicar o logo da marca (brand_id)</label>
+      <div class="choices">
+        <label class="chip"><input type="checkbox" id="iMatchColors" checked> Usar as cores da referência</label>
+        <label class="chip"><input type="checkbox" id="iApplyLogo"> Aplicar o logo da marca</label>
       </div>
 
-      <div class="card" style="background:var(--black); margin-top:14px">
-        <h2 style="font-size:15px">Conteúdo a compor</h2>
-        <p class="hint">Preenchido automaticamente pela aba Conteúdo — ou edite manualmente aqui.</p>
+      <div class="subcard">
+        <h3>Conteúdo a compor</h3>
+        <p class="sub">Preenchido automaticamente pela aba Conteúdo — ou edite manualmente aqui.</p>
         <div class="row">
           <div><label>Headline</label><input id="iHeadline" /></div>
           <div><label>Subheadline</label><input id="iSub" /></div>
@@ -219,7 +343,7 @@
       </div>
 
       <button class="btn" id="iBtn">Gerar imagem</button>
-      <span class="muted" id="iNote" style="margin-left:12px"></span>
+      <span class="note" id="iNote"></span>
     </div>
     <div id="iResults" class="grid"></div>
   </section>
@@ -227,9 +351,9 @@
   <!-- ============ MELHORAR ============ -->
   <section class="panel" id="imp">
     <div class="card">
-      <h2>Melhorar um flyer existente</h2>
-      <p class="hint">Refina a arte mantendo o texto. Faça upload de uma imagem OU informe o caminho de um flyer já gerado.</p>
-      <div class="drop" id="impDrop">📁 Clique ou arraste uma imagem (PNG/JPG/WEBP)</div>
+      <h2>Melhorar uma imagem</h2>
+      <p class="sub">Refina a arte mantendo o texto. Faça upload de uma imagem ou informe o caminho de uma já gerada.</p>
+      <div class="drop" id="impDrop">Clique ou arraste uma imagem · PNG, JPG ou WEBP</div>
       <input id="impFile" type="file" accept=".png,.jpg,.jpeg,.webp" style="display:none" />
       <label>…ou caminho server-side (image_path)</label>
       <input id="impPath" placeholder="/.../output/flyers/instagram_feed_xxxx.png" />
@@ -248,34 +372,29 @@
     <div id="impResults" class="grid"></div>
   </section>
 
-  <!-- ============ AVANÇADO (pipeline multiagente) ============ -->
+  <!-- ============ AVANÇADO (pipeline) ============ -->
   <section class="panel" id="advanced">
     <div class="card">
-      <h2>Pipeline multiagente (avançado)</h2>
-      <p class="hint">Fluxo ponta-a-ponta autônomo: os agentes pesquisam o mercado, escrevem os textos, geram o fundo on-brand a partir dos assets do RAG e revisam a qualidade. Usa os assets do brand_id acima.</p>
+      <h2>Pipeline multiagente</h2>
+      <p class="sub">Fluxo autônomo ponta-a-ponta: os agentes pesquisam, escrevem os textos, geram o fundo a partir dos assets da marca e revisam a qualidade. Usa os assets da marca acima.</p>
       <label>Brief da campanha</label>
-      <textarea id="brief" placeholder="Ex: Lançamento da classificação NCM por IA para importadores...">Campanha para apresentar a classificação fiscal NCM por IA da Bússola Fiscal a importadores e despachantes.</textarea>
+      <textarea id="brief" placeholder="Ex: Lançamento do meu novo produto...">Campanha para apresentar meu novo produto ao público certo.</textarea>
       <div class="row">
-        <div><label>Nome da marca</label><input id="bName" value="Bússola Fiscal" /></div>
-        <div><label>Tom de voz</label><input id="bTone" value="técnico e confiável" /></div>
+        <div><label>Nome da marca</label><input id="bName" value="Meu Produto" /></div>
+        <div><label>Tom de voz</label><input id="bTone" value="claro e confiável" /></div>
         <div><label>Estilo de fonte</label><input id="bFont" value="modern sans-serif" /></div>
       </div>
-      <div class="row">
-        <div><label>Cor primária</label><input id="bC1" type="color" value="#052A10" /></div>
-        <div><label>Cor secundária</label><input id="bC2" type="color" value="#FFFFFF" /></div>
-        <div><label>Cor de destaque</label><input id="bC3" type="color" value="#2DA84F" /></div>
-      </div>
       <label>Descrição do logo</label>
-      <input id="bLogo" value="bússola estilizada em verde" />
+      <input id="bLogo" value="símbolo estilizado" />
       <label>Plataformas</label>
-      <div class="platforms" id="platforms">
-        <label class="chk"><input type="checkbox" value="instagram_feed" checked> Instagram Feed</label>
-        <label class="chk"><input type="checkbox" value="instagram_story"> Instagram Story</label>
-        <label class="chk"><input type="checkbox" value="linkedin_post" checked> LinkedIn Post</label>
-        <label class="chk"><input type="checkbox" value="linkedin_banner"> LinkedIn Banner</label>
+      <div class="choices" id="platforms">
+        <label class="chip"><input type="checkbox" value="instagram_feed" checked> Instagram Feed</label>
+        <label class="chip"><input type="checkbox" value="instagram_story"> Instagram Story</label>
+        <label class="chip"><input type="checkbox" value="linkedin_post" checked> LinkedIn Post</label>
+        <label class="chip"><input type="checkbox" value="linkedin_banner"> LinkedIn Banner</label>
       </div>
       <button class="btn" id="genBtn">Rodar pipeline</button>
-      <span class="muted" id="genNote" style="margin-left:12px"></span>
+      <span class="note" id="genNote"></span>
     </div>
     <div id="genResults" class="grid"></div>
   </section>
@@ -284,9 +403,9 @@
   <section class="panel" id="brand">
     <div class="card">
       <h2>Assets da marca</h2>
-      <p class="hint">Tudo usa o <b>brand_id</b> do topo. Documentos e imagens alimentam o RAG (pipeline avançado); o logo é aplicado em todo flyer.</p>
-      <div class="actions">
-        <button class="btn secondary sm" id="assetsBtn">Listar assets</button>
+      <p class="sub">Tudo usa o identificador de <b>Marca</b> do topo. Documentos e imagens alimentam o pipeline avançado; o logo pode ser aplicado nas imagens.</p>
+      <div class="choices">
+        <button class="btn ghost sm" id="assetsBtn">Listar assets</button>
         <button class="btn danger sm" id="delBrandBtn">Apagar tudo da marca</button>
       </div>
       <pre class="out" id="assetsOut" style="display:none"></pre>
@@ -294,23 +413,23 @@
 
     <div class="row">
       <div class="card" style="flex:1; min-width:280px">
-        <h2>📄 Documentos</h2>
-        <p class="hint">PDF, DOCX, TXT, MD, JSON — chunked e embeddados no RAG.</p>
+        <h2 style="font-size:17px">Documentos</h2>
+        <p class="sub">PDF, DOCX, TXT, MD, JSON — indexados no RAG.</p>
         <input id="docFiles" type="file" multiple accept=".pdf,.docx,.txt,.md,.json" />
-        <button class="btn sm" id="docBtn">Enviar documentos</button>
+        <button class="btn sm" id="docBtn" style="margin-top:16px">Enviar documentos</button>
       </div>
       <div class="card" style="flex:1; min-width:280px">
-        <h2>🖼️ Imagens de referência</h2>
-        <p class="hint">Analisadas com Vision; viram DNA visual para o pipeline avançado.</p>
+        <h2 style="font-size:17px">Imagens de referência</h2>
+        <p class="sub">Analisadas com visão computacional; viram DNA visual.</p>
         <input id="imgFiles" type="file" multiple accept=".png,.jpg,.jpeg,.webp,.gif" />
-        <button class="btn sm" id="imgBtn">Enviar imagens</button>
+        <button class="btn sm" id="imgBtn" style="margin-top:16px">Enviar imagens</button>
       </div>
     </div>
 
     <div class="card">
-      <h2>🟢 Logo</h2>
-      <p class="hint">PNG com transparência recomendado. Substitui o logo atual desta marca.</p>
-      <div class="actions">
+      <h2 style="font-size:17px">Logo</h2>
+      <p class="sub">PNG com transparência recomendado. Substitui o logo atual desta marca.</p>
+      <div class="choices">
         <input id="logoFile" type="file" accept=".png,.jpg,.jpeg,.webp" style="flex:1; min-width:200px" />
         <button class="btn sm" id="logoBtn">Enviar logo</button>
         <button class="btn danger sm" id="logoDelBtn">Remover logo</button>
@@ -325,7 +444,7 @@
 <script>
 const API = ""; // mesma origem do FastAPI
 const $ = (id) => document.getElementById(id);
-const brandId = () => $("brandId").value.trim() || "bussola";
+const brandId = () => $("brandId").value.trim() || "default";
 
 function toast(msg, isErr) {
   const t = $("toast");
@@ -334,7 +453,7 @@ function toast(msg, isErr) {
 }
 function busy(btn, on, label) {
   btn.disabled = on;
-  if (on) { btn.dataset.txt = btn.textContent; btn.innerHTML = '<span class="spinner"></span> ' + (label || "..."); }
+  if (on) { btn.dataset.txt = btn.textContent; btn.innerHTML = '<span class="spinner"></span>' + (label || "..."); }
   else if (btn.dataset.txt) { btn.textContent = btn.dataset.txt; }
 }
 async function api(path, opts) {
@@ -351,13 +470,14 @@ const arrToLines = (a) => (a || []).join("\n");
 function goTab(name) {
   document.querySelectorAll(".tab").forEach(x => x.classList.toggle("active", x.dataset.tab === name));
   document.querySelectorAll(".panel").forEach(x => x.classList.toggle("active", x.id === name));
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 document.querySelectorAll(".tab").forEach(t => t.onclick = () => goTab(t.dataset.tab));
 
 // ---- health ----
 (async () => {
-  try { await api("/api/v1/health"); $("healthDot").className = "dot ok"; $("healthTxt").textContent = "API online"; }
-  catch { $("healthDot").className = "dot bad"; $("healthTxt").textContent = "API offline"; }
+  try { await api("/api/v1/health"); $("healthDot").className = "dot ok"; $("healthTxt").textContent = "online"; }
+  catch { $("healthDot").className = "dot bad"; $("healthTxt").textContent = "offline"; }
 })();
 
 // ================= 1. CONTEÚDO =================
@@ -384,6 +504,7 @@ $("cBtn").onclick = async () => {
     $("fCta").value = data.call_to_action || "";
     $("fTrust").value = arrToLines(data.trust_items);
     $("cResultCard").style.display = "block";
+    $("cResultCard").scrollIntoView({ behavior: "smooth", block: "start" });
     toast("Conteúdo gerado — revise e siga para a imagem");
   } catch (e) { toast(e.message, true); }
   finally { busy($("cBtn"), false); }
@@ -412,7 +533,7 @@ function setImgDrop(file) {
     d.textContent = "✓ " + file.name; d.classList.add("has");
     p.src = URL.createObjectURL(file); p.style.display = "block";
   } else {
-    d.textContent = "📁 Clique ou arraste a imagem de referência (PNG/JPG/WEBP)";
+    d.textContent = "Clique ou arraste a imagem de referência · PNG, JPG ou WEBP";
     d.classList.remove("has"); p.style.display = "none";
   }
 }
@@ -447,15 +568,14 @@ $("iBtn").onclick = async () => {
   try {
     const data = await api("/api/v1/images/generate", { method: "POST", body: fd });
     const box = $("iResults"); box.innerHTML = "";
-    const div = document.createElement("div"); div.className = "flyer";
+    const div = document.createElement("div"); div.className = "tile";
     div.innerHTML = `<img src="${data.image_url}" alt="${data.platform}">
       <div class="meta">
         <div class="plat">${data.platform} · ${data.size}</div>
         <div class="hl">${headline.replace(/\*\*/g, "")}</div>
-        <span class="badge ${data.logo_status.includes("composited") ? "ok" : "no"}">${data.logo_status}</span>
-        <div class="actions">
-          <a class="btn secondary sm" href="${data.image_url}" download>Baixar</a>
-          <button class="btn sm" id="sendImp">Melhorar este</button>
+        <div class="acts">
+          <a class="btn ghost sm" href="${data.image_url}" download>Baixar</a>
+          <button class="btn sm" id="sendImp">Melhorar</button>
         </div>
       </div>`;
     box.appendChild(div);
@@ -473,7 +593,7 @@ $("iBtn").onclick = async () => {
 function setImpDrop(file) {
   const d = $("impDrop");
   if (file) { d.textContent = "✓ " + file.name; d.classList.add("has"); }
-  else { d.textContent = "📁 Clique ou arraste uma imagem (PNG/JPG/WEBP)"; d.classList.remove("has"); }
+  else { d.textContent = "Clique ou arraste uma imagem · PNG, JPG ou WEBP"; d.classList.remove("has"); }
 }
 $("impDrop").onclick = () => $("impFile").click();
 $("impFile").onchange = () => setImpDrop($("impFile").files[0] || null);
@@ -496,10 +616,10 @@ $("impBtn").onclick = async () => {
     const data = await api("/api/v1/flyers/improve", { method: "POST", body: fd });
     const box = $("impResults"); box.innerHTML = "";
     (data.variations || []).forEach((v, i) => {
-      const div = document.createElement("div"); div.className = "flyer";
+      const div = document.createElement("div"); div.className = "tile";
       div.innerHTML = `<img src="${v.url}" alt="var ${i + 1}">
         <div class="meta"><div class="plat">variação ${i + 1}</div>
-        <div class="actions"><a class="btn secondary sm" href="${v.url}" download>Baixar</a></div></div>`;
+        <div class="acts"><a class="btn ghost sm" href="${v.url}" download>Baixar</a></div></div>`;
       box.appendChild(div);
     });
     toast(`${data.count} variação(ões) gerada(s)`);
@@ -517,7 +637,6 @@ $("genBtn").onclick = async () => {
     platforms,
     brand: {
       name: $("bName").value, tone: $("bTone").value, font_style: $("bFont").value,
-      primary_color: $("bC1").value, secondary_color: $("bC2").value, accent_color: $("bC3").value,
       logo_description: $("bLogo").value,
     },
   };
@@ -530,7 +649,7 @@ $("genBtn").onclick = async () => {
     });
     renderFlyers(data.flyers || []);
     $("genNote").textContent = `Status: ${data.status} · ${data.revision_cycles} ciclo(s) de revisão`;
-    toast(`${(data.flyers || []).length} flyer(s) gerado(s)`);
+    toast(`${(data.flyers || []).length} imagem(ns) gerada(s)`);
   } catch (e) { toast(e.message, true); $("genNote").textContent = ""; }
   finally { busy($("genBtn"), false); }
 };
@@ -541,20 +660,20 @@ function renderFlyers(flyers) {
     const q = f.quality;
     const ok = q && q.approved;
     const div = document.createElement("div");
-    div.className = "flyer";
+    div.className = "tile";
     div.innerHTML = `
-      ${f.image_url ? `<img src="${f.image_url}" alt="${f.platform}">` : `<div style="padding:30px;text-align:center" class="muted">sem imagem</div>`}
+      ${f.image_url ? `<img src="${f.image_url}" alt="${f.platform}">` : `<div style="padding:34px;text-align:center;color:var(--ink-3)">sem imagem</div>`}
       <div class="meta">
         <div class="plat">${f.platform}</div>
         <div class="hl">${f.headline || "—"}</div>
-        <div class="muted">${f.call_to_action || ""}</div>
-        ${q ? `<span class="badge ${ok ? "ok" : "no"}">${ok ? "✓ aprovado" : "✕ revisar"} · ${q.overall?.toFixed?.(1) ?? q.overall}</span>` : ""}
-        <div class="actions">
-          ${f.image_url ? `<a class="btn secondary sm" href="${f.image_url}" download>Baixar</a>` : ""}
-          ${f.image_path ? `<button class="btn sm">Melhorar este</button>` : ""}
+        <div style="color:var(--ink-2);font-size:13px">${f.call_to_action || ""}</div>
+        ${q ? `<span class="tag ${ok ? "ok" : "no"}" style="margin-top:8px">${ok ? "✓ aprovado" : "✕ revisar"} · ${q.overall?.toFixed?.(1) ?? q.overall}</span>` : ""}
+        <div class="acts">
+          ${f.image_url ? `<a class="btn ghost sm" href="${f.image_url}" download>Baixar</a>` : ""}
+          ${f.image_path ? `<button class="btn sm">Melhorar</button>` : ""}
         </div>
       </div>`;
-    const impBtn = div.querySelector(".actions button");
+    const impBtn = div.querySelector(".acts button");
     if (impBtn) impBtn.onclick = () => {
       $("impPath").value = f.image_path; $("impFile").value = ""; setImpDrop(null);
       goTab("imp"); toast("Caminho preenchido na aba Melhorar");
